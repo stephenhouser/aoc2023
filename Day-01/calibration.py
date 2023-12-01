@@ -1,5 +1,11 @@
 #!/usr/bin/env python
+"""
+Advent of Code Day 1 - Stephen Houser <stephenhouser@gmail.com>
+"""
+
 import re
+from functools import reduce
+
 
 # Part 1
 # Sum up the numbers from each line to get the calibration value.
@@ -13,7 +19,7 @@ import re
 #   treb7uchet  -> 77
 #
 # Adding these together produces 142.
-# Consider your entire calibration document. 
+# Consider your entire calibration document.
 # What is the sum of all of the calibration values?
 def line_value1(line: str) -> int:
     """Return the line's calibration value.
@@ -31,7 +37,7 @@ def line_value1(line: str) -> int:
     return int(first_digit + last_digit)
 
 # Part 2
-# Some of the digits are actually spelled out with letters: 
+# Some of the digits are actually spelled out with letters:
 #   one, two, three, four, five, six, seven, eight, and nine
 # now count as valid "digits".
 # Example:
@@ -51,7 +57,7 @@ def number_str(number_name: str) -> str:
     
        Example: "1" -> "1", "one" -> "1", "two" -> 2, ...
     """
-    number_names = ['zero', 'one', 'two', 'three', 'four', 
+    number_names = ['zero', 'one', 'two', 'three', 'four',
                     'five', 'six', 'seven', 'eight', 'nine']
 
     if number_name in number_names:
@@ -98,7 +104,6 @@ def read_calibration(filename, value_fn):
 #
 # Modified version that uses reduce()
 #
-from functools import reduce
 def reduce_calibration(filename, value_fn):
     """Read calibration file and return calibration value
 
