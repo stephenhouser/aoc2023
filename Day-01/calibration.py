@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Advent of Code Day 1 - Stephen Houser <stephenhouser@gmail.com>
+Advent of Code 2023 - Day 1: Trebuchet?!
+Stephen Houser <stephenhouser@gmail.com>
 """
 
 import re
