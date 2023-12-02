@@ -7,6 +7,7 @@ Stephen Houser <stephenhouser@gmail.com>
 import re
 from functools import reduce
 
+
 #
 # Part 1
 # - Parse the game file:
@@ -34,6 +35,8 @@ def parse_game_set(trail_text: str) -> tuple[int]:
        retrurs: (red, green, blue)
     """
     color_names = ('red', 'green', 'blue')
+
+    # TODO: Without list expansion something breaks later on...
     return list(map(lambda color: parse_color(trail_text, color), color_names))
 
 def parse_game_sets(trials_text:str) -> list[tuple[int]]:
@@ -42,6 +45,7 @@ def parse_game_sets(trials_text:str) -> list[tuple[int]]:
        trials_text represents the semicolon separated list of trials.
        returns: [(3, 6, 9), (r, g, b), ...]
     """
+    # TODO: Without list expansion something breaks later on...
     return list(map(parse_game_set, trials_text.split(';')))
 
 def parse_game(game_text:str) -> tuple[int, list[tuple[int]]]:
