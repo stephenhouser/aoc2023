@@ -32,7 +32,7 @@ Of course, the actual engine schematic is much larger. What is the sum of all of
 
 To begin, get your puzzle input.
 
-Answer:  
+Answer:  527446
 
 
 --- Part Two ---
@@ -64,4 +64,4 @@ In this schematic, there are two gears. The first is in the top left; it has par
 
 What is the sum of all of the gear ratios in your engine schematic?
 
-Answer:  
+Answer:  73201705

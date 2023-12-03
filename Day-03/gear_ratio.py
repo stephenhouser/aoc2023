@@ -4,10 +4,9 @@ Advent of Code 2023 - Day _: Cube Conundrum
 Stephen Houser <stephenhouser@gmail.com>
 """
 
-import sys
 import re
 from functools import reduce
-from collections import defaultdict
+from itertools import chain
 
 # 467..114..
 # ...*......
@@ -20,224 +19,132 @@ from collections import defaultdict
 # ...$.*....
 # .664.598..
 
-def parser(line: str):
-    return line
-
 def load_map(filename: str):
-    """Load ___ from the given file
+    """Load map of gears and parts from the given file
         
        filename: the file to read game descriptions from.
+       returns: a list of strings, one string for each row in the map
     """
-    map = []
     try:
         with open(filename, 'r', encoding='utf-8') as gf:
-            for line in gf.readlines():
-                map.append(line.strip())
+            return list(map(str.strip, gf.readlines()))
 
     except FileNotFoundError:
         print(f'ERROR: file {filename} not found.')
 
-    return map
+    return []
+
+def find_symbols(map):
+    """Returns list of (x,y) locations of symbols on map"""
+    symbols = []
+    for y, row in enumerate(map):
+        for match in re.finditer('[^\.\d]', row):
+            symbol = match.group(0)
+            symbol_loc = (match.start(0), y)
+            symbols.append((symbol, symbol_loc))
+
+    return symbols
+
+def filter_symbols(symbols, match):
+    return list(filter(lambda x: x[0] == match, symbols))
+
+def find_parts(map):
+    parts = []
+    for y, row in enumerate(map):
+        for match in re.finditer(r'\d+', row):
+            part_n = int(match.group(0))
+            part_box = ( (match.start(0), y), (match.end(0)-1, y) ) 
+            parts.append( (part_n, part_box))
+
+    return parts
+
+def make_gearbox(symbol, margin=1):
+    (s, center) = symbol
+    return (s, ((center[0] - margin, center[1] - margin),
+                (center[0] + margin, center[1] + margin)))
 
 
-def show_area(map, x, y):
-    for py in range(y-2, y+3):
+def find_overlaps(gear_box, parts):
+    """Returns which part numbers overlap the gear_box"""
+    return filter(lambda x: overlaps(gear_box, x[1]), parts)
+                       
+
+def find_connected_parts(symbols, parts):
+    """Return list of connected parts
+       [(symbol, [parts, ...])
+    """
+    gear_boxes = list(map(make_gearbox, symbols))
+
+    connected = [] 
+    for (symbol, gear_box) in gear_boxes:
+        overlapping_parts = find_overlaps(gear_box, parts)
+        overlappint_part_numbers = map(lambda part: part[0], overlapping_parts)
+        connected.append(list(overlappint_part_numbers))
+
+    return connected
+
+
+## Utilities
+
+def print_symbols(symbols, map=None):
+    for (symbol, center) in symbols:
+        if map:
+            show_area(map, center, f'Symbol {symbol}')
+        else:
+            print(f'{symbol}: {center}')
+
+def print_parts(parts):
+    for p in parts:
+        (part_n, box) = p
+        print(f'{part_n:3}: {box}')
+
+def show_area(map, center, header=''):
+    (x, y) = center
+
+    print(header)
+    for py in range(y-1, y+2):
         print('\t', end='')
-        for px in range(x-2, x+3):
+        for px in range(x-1, x+2):
             try:
                 print(map[py][px], end='')
             except IndexError:
                 pass
         print()
-    
-def map_symbols(map):
-    symbol_map = []
-    for line in map:
-        symbol_line = []
-        for char in list(line):
-            if char.isdigit() or char == '.':
-                symbol_line.append(False)
-            else:
-                symbol_line.append(True)
 
-        symbol_map.append(symbol_line)
+def overlaps(a, b):
+    """Return True of box a overlaps box b
 
-    return symbol_map
+       a box is defined as ((x1, y1), (x2, y2)) where x1 <= x2 and y1 <= y2
+    """
+    right_of = b[0][0] > a[1][0] # b is to the left of a
+    left_of  = b[1][0] < a[0][0] # b is to the right of a
+    above    = b[0][1] > a[1][1] # b is above a
+    below    = b[1][1] < a[0][1] # b is below a
 
-def gear_symbols(map):
-    symbol_map = []
-    for line in map:
-        symbol_line = []
-        for char in list(line):
-            if char == '*':
-                symbol_line.append(True)
-            else:
-                symbol_line.append(False)
-
-        symbol_map.append(symbol_line)
-
-    return symbol_map
-
-def find_parts(map):
-    parts = []
-    for y in range(len(map)):
-        for match in re.finditer(r'\d+', map[y]):
-            part_n = int(match.group(0))
-            parts.append( (part_n, ( (match.start(0), y), (match.end(0)-1, y) ) ))
-
-    return parts
-
-def find_gear_symbols(map):
-    gears = []
-    for y in range(len(map)):
-        for x in range(len(map[y])):
-            if map[y][x] == '*':
-                gears.append(((x-1, y-1), (x+1, y+1)))
-                             
-    return gears
-
-def overlapA(a, b):
-    # (x, y), (x, y)
-    # [00] 01  10 11
-    a_width = abs(a[0][0] - a[1][0])
-    b_width = abs(b[0][0] - b[1][0])
-    a_height = abs(a[0][1] - a[1][1])
-    b_height = abs(b[0][1] - b[1][1])
-    return (abs(a[0][0] - b[0][0]) * 2 < (a_width + b_width)) and \
-           (abs(a[0][1] - b[0][1]) * 2 < (a_height + b_height))
-
-def overlap(a, b):
-    # left [0][0]   right [1][0]
-    # top [0][1]     bottom [1][1]
-    # if b[0][0] > a[1][0] or  # b.left > a.right
-    #     b[1][0] < a[0][0] or # b.right < a.left
-    #     b[0][1] > a[1][1] or # b.top < a.bottom
-    #     b[1][1] < a[0][1]:   # b.bottom < a.top
-    if b[0][0] > a[1][0] or  \
-        b[1][0] < a[0][0] or \
-        b[0][1] > a[1][1] or \
-        b[1][1] < a[0][1]:   
-
-        return False
-
-    return True
-
-def find_connected_parts(gear, parts):
-    touches_parts = []
-    for (part_n, part_box) in parts:
-        if overlap(gear, part_box):
-            touches_parts.append(part_n)
-
-    return touches_parts
-
-def find_gears(gear_s, parts, og_map):
-    gears = []
-    ratios = []
-    for gear in gear_s:
-        #show_area(og_map, gear[0][0]+1, gear[0][1]+1)
-
-        touches_parts = []
-        print(f'Gear {gear}')
-        for (part_n, part_box) in parts.items():
-            if overlap(gear, part_box):
-                touches_parts.append(part_n)
-                print('\tpart ', part_n, part_box)
-
-        if len(touches_parts) == 2:
-            gears.extend(touches_parts)
-            ratios.append(touches_parts[0] * touches_parts[1])
-
-    return ratios
-
-def set_touches(map, x, y):
-    for ny in [-1, 0, 1]:
-        for nx in [-1, 0, 1]:
-            try:
-                map[y+ny][x+nx] = True
-            except IndexError:
-                pass
-
-def expand_symbols(map):
-    nmap = [row[:] for row in map]
-    for y in range(len(map)):
-        for x in range(len(map[y])):
-            if map[y][x]:
-                set_touches(nmap, x, y)
-
-    return nmap
-
-def number_touches(map, symbols):
-    numbers = []
-    for y in range(len(map)):
-        for match in re.finditer(r'\d+', map[y]):
-            num = int(match.group(0))
-            span = match.span(0)
-
-            touches = False
-            for x in range(match.start(0), match.end(0)-1):
-                if symbols[y][x]:
-                    touches = True
-            
-            if touches:
-                numbers.append(num)
-
-    return numbers
-            
-# def number_map(map, tm):
-#     # [ 543: [(x, y), (x, y)], ...]
-#     number_locs= defaultdict(list)
-#     for y in range(len(map)):
-#         for match in re.finditer(r'\d+', map[y]):
-#             num = int(match.group(0))
-#             for x in range(match.start(0), match.end(0)):
-#                 number_locs[num] += [(x, y)]
-
-def pp_map(map):
-    for row in map:
-        for cell in row:
-            print(f'{cell:2}', end='')
-        print()
+    return not (right_of or left_of or above or below)
 
 
-#og_map = load_map('test-1.txt')
-og_map = load_map('input.txt')
-#symbol_map = map_symbols(og_map)
-#expand_map = expand_symbols(symbol_map)
+#
+# Loading...
+#
+engine_map = load_map('test-1.txt')  # 4361
+engine_map = load_map('input.txt')  # 4361
 
-# nm = number_map(map)
+symbols = find_symbols(engine_map)
+parts = find_parts(engine_map)
 
-#number_list = number_touches(og_map, expand_map)
-#print(sum(number_list))
+#print('--- Symbols ---')
+#print_symbols(symbols)
 
-
-gears = find_gear_symbols(og_map)
-parts = find_parts(og_map)
-gear_ratios = []
-for g in gears:
-    print(f'Gear {g}')
-    show_area(og_map, g[0][0]+1, g[0][1]+1)
-    connected = find_connected_parts(g, parts)
-    if len(connected) == 2:
-        gear_ratios.append(connected[0] * connected[1])
-    print(connected)
-    print()
-
-print(sum(gear_ratios))
-
-#print('Symbols', gears)
-#print('Parts', parts)
-#gears = find_gears(gears, parts, og_map)
-#print(sum(gears))
-#print(len(gears))
-
-
-#expand_gears = expand_symbols(gear_map)
-#p_map(expand_gears)
-
+#print('--- Parts ---')
+#print_parts(parts)
 
 #
 # Part 1
 #
+connected = find_connected_parts(symbols, parts)
+connected_part_sum = sum(chain(*connected))
+print(f'The sum of the connected part numbers is: {connected_part_sum}')
 
 
 #
@@ -245,3 +152,8 @@ print(sum(gear_ratios))
 #
 # 127 gears
 # 28818010 too low
+gear_symbols = filter_symbols(symbols, '*')
+connected_parts = find_connected_parts(symbols, parts)
+gear_boxes = filter(lambda x: len(x) == 2, connected_parts)
+gear_ratios = map(lambda x: x[0] * x[1], gear_boxes)
+print(f'The sum of the gear ratios is: {sum(gear_ratios)}')
