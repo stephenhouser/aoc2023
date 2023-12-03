@@ -5,9 +5,8 @@ Stephen Houser <stephenhouser@gmail.com>
 """
 
 import re
-from functools import reduce
 from itertools import chain
-
+from functools import partial
 
 def load_map(filename: str) -> list[str]:
     """Load map of gears and parts from the given file
@@ -55,27 +54,29 @@ def find_parts(engine_map: list[str]) -> list[tuple[str, tuple[int]]]:
     return parts
 
 def find_overlaps(box, parts) -> list[int]:
-    """Returns list of part numbers from parts overlap the box"""
-
+    """Returns list of part numbers from parts that overlap the box"""
     # filter on a part's bounding box overlapping the given box
     return filter(lambda x: overlaps(box, x[1]), parts)
 
 def overlapping_part_numbers(box, parts):
     """Return list of part numbers that overlap box."""
     # use find_overlapping to determine which parts overlap the given box
-    # include only the part numbers in the result
+    # include only the part numbers in the result list
     return list(map(lambda part: part[0], find_overlaps(box, parts)))
 
 def find_connected_parts(symbols, parts):
-    """Return list of connected parts
-       [(symbol, [parts, ...])
+    """Return list of part numbers that are connected via a symbol
 
-       symbol -> box -> symbol, parts
-       box 
+       [[part, part,...], [part, part, ...]]
     """
-    # map make_box to symbol center points to get boxes that enclose symbols
+    # NOTE: drop the symbols, they are not needed. Only need bounding boxes.
+
+    # map make_box() over symbol center points to get list of symbol bounding
+    # boxes that will be used to check for connected parts
     symbol_boxes = map(make_box, map(lambda x: x[1], symbols))
-    # map symbol boxes to add overlapping part numbers using find overlaps
+
+    # map overlapping_part_numbers over symbol bounding boxes to get
+    # list of part numbers that are connected to each symbol
     return map(lambda box: overlapping_part_numbers(box, parts), symbol_boxes)
 
 def make_box(center):
@@ -86,7 +87,7 @@ def make_box(center):
     return ((center[0]-1, center[1]-1), (center[0]+1, center[1]+1))
 
 def overlaps(box_a, box_b):
-    """Return True of box_a overlaps box_b
+    """Return True of box_a overlaps box_b, otherwise False
 
        A box is defined as ((x1, y1), (x2, y2)) where x1 <= x2 and y1 <= y2
     """
@@ -129,18 +130,23 @@ def show_area(engine_map, center, header=''):
 
 def symbol_stats(symbols, parts):
     """Print some statistics about the symbol occurrences in the map"""
-    for n in ('!', '@', '#', '$', '%', '^', '&', '*'):
-        n_symbols = list(filter(lambda x: x[0] == n, symbols))
+    for symbol in ('!', '@', '#', '$', '%', '^', '&', '*'):
+        # W0640: Cell variable symbol defined in loop (cell-var-from-loop)
+        # n_symbols = list(filter(lambda x: x[0] == symbol, symbols))
+        # See partial(): https://docs.python.org/3/library/functools.html
+        n_symbols = filter(partial(lambda x, y: x[0] == y, symbol), symbols)
         n_parts = find_connected_parts(n_symbols, parts)
         n_boxes = list(filter(lambda x: len(x) == 2, n_parts))
-        print(f'{n} occurs {len(n_symbols)} times. {len(n_boxes)} of which connect to 2 parts')
+        print(f'{symbol} occurs {len(list(n_symbols))} times. {len(n_boxes)} of which connect to 2 parts')
 
 #
 # Part 1
 #
 def part_numbers(symbols, parts):
     """Return the part number sum for the symbols and parts."""
+    # find all connected part numbers
     connected = find_connected_parts(symbols, parts)
+    # return a flattened list of connected part numbers
     return chain(*connected)
 
 #
@@ -161,13 +167,18 @@ def gear_ratios(symbols, parts):
     # ^ occurs 0 times. 0 of which connect to 2 parts
     # & occurs 38 times. 0 of which connect to 2 parts
     # * occurs 367 times. 325 of which connect to 2 parts
-    #symbol_stats(symbols, parts)
+    symbol_stats(symbols, parts)
 
+    # filter symbols to get only "gear" symbols
     gear_symbols = list(filter(lambda x: x[0] == '*', symbols))
+    # find connected part numbers from filtered symbol list
     connected_parts = find_connected_parts(gear_symbols, parts)
+    # Filter for connected part lists that contain exactly 2 parts
     gear_boxes = filter(lambda x: len(x) == 2, connected_parts)
-    gear_ratios = map(lambda x: x[0] * x[1], gear_boxes)
-    return gear_ratios
+    # compute the product of each set of connected parts (the gear ratio)
+    ratios = map(lambda x: x[0] * x[1], gear_boxes)
+
+    return ratios
 
 
 def main():
