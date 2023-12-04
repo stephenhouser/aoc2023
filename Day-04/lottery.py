@@ -5,19 +5,61 @@ Stephen Houser <stephenhouser@gmail.com>
 """
 
 import re
-from itertools import chain
-from functools import reduce
+import argparse
 
-def parse_card(card_line):
-    """Returns a card (card, (winning numbers), (your numbers), multiplier)
+class Card:
+    """Class to represent a card in the elf lottery"""
 
-    """
-    #Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
-    card_match = re.match(r'Card\s+(\d+):([\d ]+)\|([\d ]+)', card_line)
-    card_id = int(card_match.group(1))
-    winning_ns = list(map(int, re.findall(r'\d+', card_match.group(2))))
-    card_ns = list(map(int, re.findall(r'\d+', card_match.group(3))))
-    return [card_id, winning_ns, card_ns, 1]
+    def __init__(self, card_line):
+        self.card_id = None
+        self.winning = []
+        self.picks = []
+        self.score = None
+        self.matches = 0
+        self.copies = 1
+        self._parse_card_line(card_line)
+
+    def _compute_score(self):
+        # cache the score and matches computation
+        if not self.score or not self.matches:
+            card_winners = set(self.winning) & set(self.picks)
+            self.score = int(pow(2, len(card_winners)-1))
+            self.matches = len(card_winners)
+
+    def get_matches(self):
+        """Return the number of picks that match winning numbers."""
+        self._compute_score()
+        return self.matches
+
+    def get_score(self):
+        """Return the score for this card."""
+        self._compute_score()
+        return self.score
+
+    def add_copies(self, copies):
+        """Increase the number of copies of this card"""
+        self.copies += copies
+
+    def get_copies(self):
+        """Return the number of copies of this card."""
+        return self.copies
+
+    def _parse_card_line(self, card_line):
+        """Parse text description of card"""
+        card_match = re.match(r'Card\s+(\d+):([\d ]+)\|([\d ]+)', card_line)
+        self.card_id = int(card_match.group(1))
+        self.winning = list(map(int, re.findall(r'\d+', card_match.group(2))))
+        self.picks = list(map(int, re.findall(r'\d+', card_match.group(3))))
+
+    def __repr__(self):
+        """Return REPL representation of the card"""
+        return str(self)
+
+    def __str__(self):
+        """Return string representation of the card."""
+        winn = ' '.join(map(str, self.winning))
+        pick = ' '.join(map(str, self.picks))
+        return f'Card {self.card_id}: {winn} | {pick} | score={self.score}, copies={self.copies}'
 
 def load_cards(filename: str) -> list[str]:
     """Load ...
@@ -27,44 +69,40 @@ def load_cards(filename: str) -> list[str]:
     """
     try:
         with open(filename, 'r', encoding='utf-8') as map_file:
-            return list(map(parse_card, map_file.readlines()))
+            return list(map(Card, map_file.readlines()))
 
     except FileNotFoundError:
         print(f'ERROR: file {filename} not found.')
 
     return []
 
-def score_card_1(card):
-    """Return the score for card"""
-    card_winners = set(card[1]) & set(card[2])
-    # score is 2^n-1
-    return int(pow(2, len(card_winners)-1))
-
-def score_cards_1(cards):
-    """Return a list with all the scored cards"""
-    return list(map(score_card_1, cards))
-
-def score_card_2(card):
-    return len(set(card[1]) & set(card[2]))
-               
-def score_cards_2(cards):
-    n_cards = 0
+def duplicate_cards(cards):
+    """Updates cards to reflect winning new cards.
+    """
     for card_n, card in enumerate(cards):
-        (_, win_ns, card_ns, copies) = card
-        n_cards += copies
+        for copy_n in range(card.get_matches()):
+            card_copy = card_n + 1 + copy_n
+            if card_copy < len(cards):
+                cards[card_copy].add_copies(card.get_copies())
 
-        match_count = len(set(win_ns) & set(card_ns))
-        for _ in range(copies):
-            for copy_n in range(card_n, card_n + match_count + 1):
-                if copy_n < len(cards):
-                    cards[copy_n][3] += 1
+def main():
+    """Main Routine, does all the work"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', default='input.txt', nargs='+')
+    args = parser.parse_args()
 
-    return n_cards
+    for filename in args.filename:
+        print(filename)
+        cards = load_cards(filename)
 
-cards = load_cards('input.txt')
-#cards = load_cards('input.txt')
-#card_values = score_cards_1(cards)
-#print(sum(card_values))
+        total_score = sum(map(Card.get_score, cards))
+        print(f'\tSum of scores: {total_score}')
 
-card_values = score_cards_2(cards)
-print(card_values)
+        duplicate_cards(cards)
+        total_cards = sum(map(Card.get_copies, cards))
+        print(f'\tTotal number of cards: {total_cards}')
+
+        print()
+
+if __name__ == '__main__':
+    main()
