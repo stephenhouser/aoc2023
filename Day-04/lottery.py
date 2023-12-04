@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day _: Cube Conundrum
+Advent of Code 2023 - Day 4: Scratchcards
 Stephen Houser <stephenhouser@gmail.com>
 """
 
