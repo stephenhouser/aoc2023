@@ -6,8 +6,14 @@ Stephen Houser <stephenhouser@gmail.com>
 
 import re
 import argparse
+from functools import partial
+from locale import format_string
+
+from performance import timer
 
 class PlantingMap:
+    """Map of plantings from domain->range"""
+
     def __init__(self, source, destination):
         """Initialize a PlantingMap with source and destination"""
         self.source = source
@@ -15,21 +21,23 @@ class PlantingMap:
         self.planting_map = []
 
     @classmethod
-    def from_text(clss, map_text):
+    def from_text(cls, map_text):
         """Return a new PlantingMap object parsed from the text specification.
         """
         match = re.match(r'(\w+)-to-(\w+)\s+map:', map_text)
         plant_map = PlantingMap(match.group(1), match.group(2))
 
         for match in re.finditer(r'(\d+)\s+(\d+)\s+(\d+)', map_text):
-            destination = int(match.group(1))
-            source = int(match.group(2))
+            map_range = int(match.group(1))
+            map_domain = int(match.group(2))
             length = int(match.group(3)) + 1 # +1 to include endpoint in range
-            offset = destination - source
-            # each entry in the planting_map is: source_range, offset
+            offset = map_range - map_domain
+            # each entry in the planting_map is: map_domain, map_range, offset
             # if the seed value is in source range, we can just add offset to
             # then place it in the output range
-            plant_map.planting_map.append( (range(source, source+length), offset) )
+            plant_map.planting_map.append( ((map_domain, map_domain+length),
+                                           (map_range, map_range+length),
+                                             offset) )
 
         return plant_map
 
@@ -37,8 +45,10 @@ class PlantingMap:
     def convert(self, input_value):
         """Return the mapped input value. If no ranges match, return input"""
         for mapping in self.planting_map:
-            if input_value in mapping[0]:       # mapping[0] is the range
-                return input_value + mapping[1] # mapping[1] is offset
+            domain = mapping[0]                 # mapping[0] is the domain
+            #range = mapping[1]                 # mapping[1] is the range
+            if domain[0] <= input_value <= domain[1]:
+                return input_value + mapping[2] # mapping[1] is offset
 
         return input_value
 
@@ -72,7 +82,26 @@ def load_almanac(filename: str):
 
     return (seeds, almanac)
 
-def plant(seed, seed_type, almanac):
+#
+# These are brute-force methods. They work well for a single seed mapping
+# but take a ton of time in the case of mapping a large range of seed values
+#
+# There must be a better way to "project" the map through the mappings
+#
+@timer
+def plant_iterative(seed, seed_type, almanac):
+    """Return the location where a seed should be planted by consulting 
+       the almanac.        
+    """
+    while seed_type != 'location':
+        plant_map = almanac[seed_type]
+        seed = plant_map.convert(seed)
+        seed_type = plant_map.destination
+
+    return seed
+
+@timer
+def plant_recursive(seed, seed_type, almanac):
     """Return the location where a seed should be planted by consulting 
        the almanac.        
     """
@@ -81,7 +110,14 @@ def plant(seed, seed_type, almanac):
 
     # get the planting map and recurse...
     plant_map = almanac[seed_type]
-    return plant(plant_map.convert(seed), plant_map.destination, almanac)
+    return plant_recursive(plant_map.convert(seed), plant_map.destination, almanac)
+
+def pairwise(things):
+    """Return a list of pairs from list.
+        [1, 2, 3, 4] -> [(1, 2), (3, 4)]
+    """
+    thing_iter = iter(things)
+    return zip(thing_iter, thing_iter)
 
 def main():
     """Main Routine, does all the work"""
@@ -93,52 +129,30 @@ def main():
         print(filename)
         (seeds, almanac) = load_almanac(filename)
 
-        locations = list(map(lambda x: plant(x, 'seed', almanac), seeds))
-        print(f'\tThe minimim location for planting is {min(locations)}')
+        #
+        # Part One
+        #
+        locations = map(
+            partial(plant_recursive, seed_type='seed', almanac=almanac),
+            seeds)
+        print(f'\tPart 1: The minimim location for planting is {min(locations)}')
+
+        #
+        # Part Two
+        # Ugly brute-force method, maps *every* seed through the maps
+        #
+        min_location = None
+        for (seed, length) in pairwise(seeds):
+            print(format_string("%15d seeds", length, grouping=True))
+            locations = map(
+                partial(plant_iterative, seed_type='seed', almanac=almanac),
+                range(seed, seed+length))
+
+            local_minimum = min(list(locations))
+            min_location = local_minimum if not min_location else min(min_location, local_minimum)
+
+        print(f'\tPart 2: The minimim location for planting is {min_location}')
 
 
 if __name__ == '__main__':
     main()
-
-
-
-"""
-seeds: 79 14 55 13
-
-seed-to-soil map:
-50 98 2
-52 50 48
-
-soil-to-fertilizer map:
-0 15 37
-37 52 2
-39 0 15
-
-fertilizer-to-water map:
-49 53 8
-0 11 42
-42 0 7
-57 7 4
-
-water-to-light map:
-88 18 7
-18 25 70
-
-light-to-temperature map:
-45 77 23
-81 45 19
-68 64 13
-
-temperature-to-humidity map:
-0 69 1
-1 0 69
-
-humidity-to-location map:
-60 56 37
-56 93 4
-
-Seed 79, soil 81, fertilizer 81, water 81, light 74, temperature 78, humidity 78, location 82.
-Seed 14, soil 14, fertilizer 53, water 49, light 42, temperature 42, humidity 43, location 43.
-Seed 55, soil 57, fertilizer 57, water 53, light 46, temperature 82, humidity 82, location 86.
-Seed 13, soil 13, fertilizer 52, water 41, light 34, temperature 34, humidity 35, location 35.
-So, the lowest location number in this example is 35."""
