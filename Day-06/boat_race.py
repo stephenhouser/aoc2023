@@ -6,7 +6,9 @@ Stephen Houser <stephenhouser@gmail.com>
 
 import re
 import argparse
-from functools import reduce
+import time
+import math
+from functools import reduce, wraps
 import multiprocessing
 
 def load_file(filename: str):
@@ -47,6 +49,22 @@ def load_race_2(filename: str):
 
     return list(zip(distances, times))
 
+
+
+def timer(func):
+    """Wrap function and report on timing"""
+    @wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        time_start = time.perf_counter()
+        value = func(*args, **kwargs)
+
+        time_end = time.perf_counter()
+        elapsed_time = time_end - time_start
+        print(f"timer -> {elapsed_time:.4f}s")
+        return value
+
+    return wrapper_timer
+
 #
 # The naive solution to map out all the times and see which ones are
 # larger than the distance needed
@@ -67,14 +85,38 @@ def race_times_o1(race):
 
     return len(winners)
 
-def race_times(race):
+@timer
+def race_times_brute(race):
     """Returns a list of (distance, hold times) to beat the 
         passed race (distance, current_winner)
     """
     # Higher Order function version
     distances = map(lambda h: h*(race[1]-h), range(race[1]+1))
-    winners = filter(lambda x: x > race[0], distances)
-    return len(list(winners))
+    winners = list(filter(lambda x: x > race[0], distances))
+    #print(f'brute {len(winners)}')
+    return len(winners)
+
+@timer
+def race_times_quadratic(race):
+    """Return the number of "hold times" that would allow the boat to
+       get to distance in the alloted race_time (the previous winning time).
+
+       Solve the quadratic and return the number of integers above the x axis
+            distance = hold_time * (race_time - hold_time)
+        Rewrite:
+            distance = hold_time*race*time - hold_time^2
+            hold_time^2 + distance = hold_time*race_time
+            hold_time^2 - race_time*hold_time + distance  = 0
+            ax^2        - bx                   + c        = 0
+
+            a = 1, b = race_time, c = distance, x = hold_time
+    """
+    (distance, race_time) = race
+    d1 = (race_time-math.sqrt(race_time**2 - 4*distance))/2.0
+    d2 = (race_time+math.sqrt(race_time**2 - 4*distance))/2.0
+    nums = round(d2-d1-1) if d2 == int(d2) else round(d2-d1)
+    #print(f'd1={d1:.2f}, d2={d2:.2f} a={nums}')
+    return nums
 
 def main():
     """Main Routine, does all the work"""
@@ -90,21 +132,25 @@ def main():
         #
         races = load_file(filename)
         print(f'1. Races: {races}')
-        winners_product = reduce(lambda a, c: c * a, map(race_times, races), 1)
-        print(f'\t1. The product of winning race combinations is: {winners_product}')
+
+        winners_product = reduce(lambda a, c: c * a, map(race_times_brute, races), 1)
+        print(f'\t1. (brute) The product of winning race combinations is: {winners_product}')
+
+        winners_product = reduce(lambda a, c: c * a, map(race_times_quadratic, races), 1)
+        print(f'\t1. (math)  The product of winning race combinations is: {winners_product}')
 
         #
         # Part Two
-        # I thought there would need to be a better solution to this,
-        # a maximization function (calculus)...
+        #
         races = load_race_2(filename)
         print(f'2. Races: {races}')
 
         with multiprocessing.Pool(processes=4) as pool:
-            #winners_product = reduce(lambda a, c: c * a, pool.map(race_times, races), 1)
-            winners_product = reduce(lambda a, c: c * a, pool.map(race_times, races), 1)
+            winners_product = reduce(lambda a, c: c * a, pool.map(race_times_brute, races), 1)
+            print(f'\t2. (brute) The product of winning race combinations is: {winners_product}')
 
-        print(f'\t2. The product of winning race combinations is: {winners_product}')
+        winners_product = reduce(lambda a, c: c * a, map(race_times_quadratic, races), 1)
+        print(f'\t2. (math)  The product of winning race combinations is: {winners_product}')
 
         print()
 
