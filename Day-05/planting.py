@@ -7,9 +7,6 @@ Stephen Houser <stephenhouser@gmail.com>
 import re
 import argparse
 from functools import partial
-from locale import format_string
-
-from performance import timer
 
 class PlantingMap:
     """Map of plantings from domain->range"""
@@ -32,12 +29,9 @@ class PlantingMap:
             map_domain = int(match.group(2))
             length = int(match.group(3)) + 1 # +1 to include endpoint in range
             offset = map_range - map_domain
-            # each entry in the planting_map is: map_domain, map_range, offset
-            # if the seed value is in source range, we can just add offset to
-            # then place it in the output range
-            plant_map.planting_map.append( ((map_domain, map_domain+length),
-                                           (map_range, map_range+length),
-                                             offset) )
+            # each entry in the planting_map is: map_domain and offset to apply
+            # if the seed value is in the domain to get it in the range
+            plant_map.planting_map.append((map_domain, map_domain+length, offset))
 
         return plant_map
 
@@ -45,10 +39,8 @@ class PlantingMap:
     def convert(self, input_value):
         """Return the mapped input value. If no ranges match, return input"""
         for mapping in self.planting_map:
-            domain = mapping[0]                 # mapping[0] is the domain
-            #range = mapping[1]                 # mapping[1] is the range
-            if domain[0] <= input_value <= domain[1]:
-                return input_value + mapping[2] # mapping[1] is offset
+            if mapping[0] <= input_value <= mapping[1]:
+                return input_value + mapping[2]
 
         return input_value
 
@@ -83,24 +75,9 @@ def load_almanac(filename: str):
     return (seeds, almanac)
 
 #
-# These are brute-force methods. They work well for a single seed mapping
-# but take a ton of time in the case of mapping a large range of seed values
+# This is a brute-force methods. It works well for a single seed mapping
+# but takes a ton of time in the case of mapping a large range of seed values
 #
-# There must be a better way to "project" the map through the mappings
-#
-@timer
-def plant_iterative(seed, seed_type, almanac):
-    """Return the location where a seed should be planted by consulting 
-       the almanac.        
-    """
-    while seed_type != 'location':
-        plant_map = almanac[seed_type]
-        seed = plant_map.convert(seed)
-        seed_type = plant_map.destination
-
-    return seed
-
-@timer
 def plant_recursive(seed, seed_type, almanac):
     """Return the location where a seed should be planted by consulting 
        the almanac.        
@@ -111,6 +88,76 @@ def plant_recursive(seed, seed_type, almanac):
     # get the planting map and recurse...
     plant_map = almanac[seed_type]
     return plant_recursive(plant_map.convert(seed), plant_map.destination, almanac)
+
+def apply_mapping(block, mapping):
+    """Returns a set of domains mapped onto mapping
+        domain (start, end)
+        mapping start, end, offset
+        returns mapped, leftover
+
+        domain either gets mapped or left over
+    """
+    offset = mapping[2]
+    mappings = []
+
+    if block[1] < mapping[0] or block[0] > mapping[1]:
+        # outside domain, leave alone, check next range
+        return (None, block)
+
+    # completely enclosed in domain of mapping, save it as mapped
+    if block[0] >= mapping[0] and block[1] <= mapping[1]:
+        return (((block[0]+offset, block[1]+offset), ), None)
+
+    # split bottom part at domain[0], map the overlap, keep trying on the extra
+    if block[0] <= mapping[0] and block[1] <= mapping[1]:
+        mappings.append((mapping[0]+offset, block[1]+offset))
+        block = (block[0], mapping[0])
+
+    # split top part at domain[1], map the overlap, keep trying on the extra
+    if block[0] >= mapping[0] and block[1] >= mapping[1]:
+        mappings.append((block[0]+offset, mapping[1]+offset-1))
+        block = (mapping[1]-1, block[1])
+
+    return (mappings, block)
+
+def apply_mappings(p_blocks, plant_map):
+    """Returns the result of applying all the mappings for a plant map
+
+       p_blocks: blocks to map [(x1, y1), (x2, y2), ...]
+       returns: all the possible ranged p_blocks might end up in
+            [(x1, y1), (x2, y2), ...]
+    """
+    blocks = list(p_blocks)
+
+    mapped_blocks = []
+    while len(blocks) > 0:
+        block = blocks.pop()
+
+        for mapping in plant_map.planting_map:
+            (mapped, block) = apply_mapping(block, mapping)
+            if mapped:
+                mapped_blocks.extend(mapped)
+
+            if not block:
+                break
+
+        # append the part that did not get mapped, if any
+        if block:
+            mapped_blocks.append(block)
+
+    return mapped_blocks
+
+def locate_seeds(seed_blocks, seed_type, almanac):
+    """Returns lost of locations (ranges) that seeds from seed_blocks 
+       will end up
+    """
+    if seed_type == 'location':
+        return seed_blocks
+
+    planting_map = almanac[seed_type]
+    return locate_seeds(apply_mappings(seed_blocks, planting_map),
+                        planting_map.destination,
+                        almanac)
 
 def pairwise(things):
     """Return a list of pairs from list.
@@ -139,20 +186,18 @@ def main():
 
         #
         # Part Two
-        # Ugly brute-force method, maps *every* seed through the maps
         #
         min_location = None
         for (seed, length) in pairwise(seeds):
-            print(format_string("%15d seeds", length, grouping=True))
-            locations = map(
-                partial(plant_iterative, seed_type='seed', almanac=almanac),
-                range(seed, seed+length))
+            locations = locate_seeds([(seed, seed+length)], 'seed', almanac)
 
-            local_minimum = min(list(locations))
+            # get first element of each range
+            local_minimum = min(map(lambda x: x[0], locations))
+
+            #print('Local min is', local_minimum)
             min_location = local_minimum if not min_location else min(min_location, local_minimum)
 
         print(f'\tPart 2: The minimim location for planting is {min_location}')
-
 
 if __name__ == '__main__':
     main()
