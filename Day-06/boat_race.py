@@ -85,7 +85,7 @@ def race_times_o1(race):
 
     return len(winners)
 
-@timer
+#@timer
 def race_times_brute(race):
     """Returns a list of (distance, hold times) to beat the 
         passed race (distance, current_winner)
@@ -96,7 +96,7 @@ def race_times_brute(race):
     #print(f'brute {len(winners)}')
     return len(winners)
 
-@timer
+#@timer
 def race_times_quadratic(race):
     """Return the number of "hold times" that would allow the boat to
        get to distance in the alloted race_time (the previous winning time).
@@ -115,8 +115,15 @@ def race_times_quadratic(race):
     d1 = (race_time-math.sqrt(race_time**2 - 4*distance))/2.0
     d2 = (race_time+math.sqrt(race_time**2 - 4*distance))/2.0
     nums = round(d2-d1-1) if d2 == int(d2) else round(d2-d1)
-    #print(f'd1={d1:.2f}, d2={d2:.2f} a={nums}')
+    #print(f'math d1={d1:.2f}, d2={d2:.2f} a={nums}')
     return nums
+
+def race_times_disc(race):
+    """descriminant of a quadratic trinomial"""
+    (distance, race_time) = race
+    ans = math.sqrt(race_time**2 - 4 * distance)
+    #print(f'disc a={round(ans)}')
+    return round(ans)
 
 def main():
     """Main Routine, does all the work"""
@@ -137,8 +144,10 @@ def main():
         print(f'\t1. (brute) The product of winning race combinations is: {winners_product}')
 
         winners_product = reduce(lambda a, c: c * a, map(race_times_quadratic, races), 1)
-        print(f'\t1. (math)  The product of winning race combinations is: {winners_product}')
+        print(f'\t1. (quad)  The product of winning race combinations is: {winners_product}')
 
+        winners_product = reduce(lambda a, c: c * a, map(race_times_disc, races), 1)
+        print(f'\t1. (disc)  The product of winning race combinations is: {winners_product}')
         #
         # Part Two
         #
@@ -150,8 +159,10 @@ def main():
             print(f'\t2. (brute) The product of winning race combinations is: {winners_product}')
 
         winners_product = reduce(lambda a, c: c * a, map(race_times_quadratic, races), 1)
-        print(f'\t2. (math)  The product of winning race combinations is: {winners_product}')
+        print(f'\t2. (quad)  The product of winning race combinations is: {winners_product}*')
 
+        winners_product = reduce(lambda a, c: c * a, map(race_times_disc, races), 1)
+        print(f'\t2. (disc)  The product of winning race combinations is: {winners_product}*')
         print()
 
 if __name__ == '__main__':
