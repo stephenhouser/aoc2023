@@ -1,5 +1,7 @@
 # Day 1: Trebuchet?!
 
+[Advent of Code -- Day 1](https://adventofcode.com/2023/day/1)
+
 ## Part One
 
 - Combine the first and last digit of each line to form a two-digit number
