@@ -36,7 +36,7 @@ def parse_game_set(trail_text: str) -> tuple[int]:
     """
     color_names = ('red', 'green', 'blue')
 
-    # TODO: Without list expansion something breaks later on...
+    # Without list expansion something breaks later on...
     return list(map(lambda color: parse_color(trail_text, color), color_names))
 
 def parse_game_sets(trials_text:str) -> list[tuple[int]]:
@@ -45,7 +45,7 @@ def parse_game_sets(trials_text:str) -> list[tuple[int]]:
        trials_text represents the semicolon separated list of trials.
        returns: [(3, 6, 9), (r, g, b), ...]
     """
-    # TODO: Without list expansion something breaks later on...
+    # Without list expansion something breaks later on...
     return list(map(parse_game_set, trials_text.split(';')))
 
 def parse_game(game_text:str) -> tuple[int, list[tuple[int]]]:
@@ -68,8 +68,8 @@ def load_games(filename: str):
     """
     games = {}
     try:
-        with open(filename, 'r', encoding='utf-8') as gf:
-            for line in gf.readlines():
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line in file.readlines():
                 (game, sets) = parse_game(line)
                 games[game] = sets
 
@@ -115,7 +115,7 @@ def valid_games(games: dict[int, list[tuple[int]]],
 #       power = red cubes * green * blue
 # - Sum all the powers
 #
-def max_sequence(a: tuple[int], b: tuple[int]) -> tuple[int]:
+def max_sequence(tup_a: tuple[int], tup_b: tuple[int]) -> tuple[int]:
     """Returns a tuple representing the maximum value for each
        item in the sequences a and b.
 
@@ -123,7 +123,7 @@ def max_sequence(a: tuple[int], b: tuple[int]) -> tuple[int]:
 
        Ex: Givem a=(1, 3, 4), b=(2, 1, 5) returns (2, 3, 5)
     """
-    return (max(x, y) for x, y in zip(a, b))
+    return (max(x, y) for x, y in zip(tup_a, tup_b))
 
 def cubes_for_game(trials:list[tuple[int]]) -> tuple[int]:
     """Return the number of cubes needed for a game based on the number
