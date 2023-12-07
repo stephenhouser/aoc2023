@@ -22,6 +22,7 @@ Example engine schematic:
 ```
 
 Example answer: _4361_ (`114` and `58` are not parts as they are not adjacent to a symbol)
+
 Answer: _527446_
 
 ## Part Two
@@ -31,4 +32,5 @@ Answer: _527446_
 - The answer is the sum of all gear ratios
 
 Example answer: _467835_ (gears are `467`*`35` and `755`*`598`)
+
 Answer:  _73201705_

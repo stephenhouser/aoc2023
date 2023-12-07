@@ -14,6 +14,8 @@ treb7uchet
 
 Example answer: _142_ (12 + 38 + 15 + 77)
 
+Answer: _53386_
+
 ## Part Two
 
 - Same as Part One
@@ -33,3 +35,5 @@ zoneight234
 ```
 
 Example answer: _281_ (29 + 83 + 13 + 24 + 42 + 14 + 76)
+
+Answer: _53312_

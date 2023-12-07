@@ -17,6 +17,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
 ```
 
 Example answer: _8_
+
 Your puzzle answer was _2727_
 
 ## Part Two
@@ -28,4 +29,5 @@ Your puzzle answer was _2727_
 Game 1 power is 48, and 12, 1560, 630, 36 in the remaining games
 
 Example answer: _2286_
+
 Your puzzle answer was _56580_
