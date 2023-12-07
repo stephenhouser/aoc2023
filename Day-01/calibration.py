@@ -93,8 +93,8 @@ def read_calibration(filename, value_fn):
     """
     calibration = 0
     try:
-        with open(filename, 'r', encoding='utf-8') as cf:
-            for line in cf.readlines():
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line in file.readlines():
                 calibration += value_fn(line.strip())
 
     except FileNotFoundError:
@@ -112,10 +112,10 @@ def reduce_calibration(filename, value_fn):
        Return the sum of all calibration values for all lines in the file.
     """
     try:
-        with open(filename, 'r', encoding='utf-8') as cf:
+        with open(filename, 'r', encoding='utf-8') as file:
             # c = calibration value
             # l = line from file
-            return reduce(lambda c,l: c + value_fn(l), cf.readlines(), 0)
+            return reduce(lambda c,l: c + value_fn(l), file.readlines(), 0)
 
     except FileNotFoundError:
         print(f'ERROR: file {filename} not found!')
