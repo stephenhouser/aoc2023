@@ -28,8 +28,6 @@ Your puzzle answer was _2727_
 - Compute the `power` of a game as the product of the minimum cubes needed
 - The answer is the sum of the `power`s
 
-Game 1 power is 48, and 12, 1560, 630, 36 in the remaining games
-
-Example answer: _2286_
+Example answer: _2286_ (48 + 12 + 1560 + 630 + 36)
 
 Your puzzle answer was _56580_
