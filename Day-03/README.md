@@ -21,7 +21,7 @@ Example engine schematic:
 .664.598..
 ```
 
-Example answer: _4361_ ()`114` and `58` are not parts as they are not adjacent to a symbol)
+Example answer: _4361_ (`114` and `58` are not parts as they are not adjacent to a symbol)
 Answer: _527446_
 
 ## Part Two
