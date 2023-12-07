@@ -1,5 +1,7 @@
 # Day 2: Cube Conundrum
 
+[Advent of Code -- Day 2](https://adventofcode.com/2023/day/2)
+
 ## Part One
 
 - Each line contains a `game` of pulling colored cubes from a bag split into multiple `trials`.
