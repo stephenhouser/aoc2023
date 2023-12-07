@@ -6,11 +6,11 @@ Each line represents a poker _hand_ and a _bid_.
 
 - `rank` each hand according to regular poker rules; 5-kind, ... high card
 - `score` each hand by card value (in the order shown); 1=1, 2=2, ... A=13
-- Order the hands by their `(rank, score)`, lowest to highest (1, 2, ...)
-- Each hand is valued at its `bid` * its position in the ordered list
+- Sort the hands lowest to highest by their `(rank, score)`
+- Each hand is valued at its `bid * position`. where `position` is its position in the ordered list.
 - Compute the sum of all values
 
-Example: 
+Example:
 
 ```
 32T3K 765
