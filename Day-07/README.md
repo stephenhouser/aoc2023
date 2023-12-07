@@ -8,7 +8,7 @@ Each line represents a poker _hand_ and a _bid_.
 - `score` each hand by card value (in the order shown); 1=1, 2=2, ... A=13
 - Sort the hands lowest to highest by their `(rank, score)`
 - Each hand is valued at its `bid * position`. where `position` is its position in the ordered list.
-- Compute the sum of all values
+- Answer is sum of all values
 
 Example:
 
@@ -22,9 +22,14 @@ QQQJA 483
 
 Example answer: _6440_
 
+Answer: _250232501_
+
 ## Part Two
 
-The `J` card acts as a joker. Its value is `0` but can duplicate any existing
-card in the hand to make a better `rank`
+- The `J` card acts as a joker. Its value is `0` but can duplicate any existing card in the hand to make a better `rank`
+- Choose the best hand for the hand's value, use same `bid` * `position`
+- Answer is sum of all values
 
 Example answer _5905_
+
+Answer: _249138943_
