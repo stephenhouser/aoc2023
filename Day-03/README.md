@@ -27,7 +27,7 @@ Answer: _527446_
 
 ## Part Two
 
-- `gears` are `*` symbols with exactly two (2) parts adjacent to them.
+- `gears` are `*` symbols with exactly two (2) parts adjacent to them
 - gear `ratio` is the product of parts connected to a gear
 - The answer is the sum of all gear ratios
 
