@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day _: Cube Conundrum
+Advent of Code 2023 - Day X: ...
 Stephen Houser <stephenhouser@gmail.com>
 """
 
@@ -10,16 +10,12 @@ import argparse
 class Thing:
     """A class of generic things"""
 
-    def __init__(self, thing_line):
-        self.line = None
-        self._parse_line(thing_line)
+    def __init__(self, text):
+        self._parse_line(text)
 
-    def _parse_line(self, thing_line):
+    def _parse_line(self, text):
         """Parse text description of thing"""
-        self.line = thing_line
-
-    def get_line(self):
-        return self.line
+        match = re.match(r'\d+', text)
 
     def __repr__(self):
         """Return REPL representation of the thing"""
@@ -27,7 +23,7 @@ class Thing:
 
     def __str__(self):
         """Return string representation of the thing"""
-        return self.line
+        return f'Empty'
 
 def load_file(filename: str) -> list[Thing]:
     """Load lines from file into a list of ITEMS
@@ -36,8 +32,8 @@ def load_file(filename: str) -> list[Thing]:
        returns: a list of strings, one string for each row in the map
     """
     try:
-        with open(filename, 'r', encoding='utf-8') as file_handle:
-            return list(map(Thing, file_handle.readlines()))
+        with open(filename, 'r', encoding='utf-8') as file:
+            return list(map(Thing, file.readlines()))
 
     except FileNotFoundError:
         print(f'ERROR: file {filename} not found.')
@@ -54,13 +50,15 @@ def main():
         print(filename)
         things = load_file(filename)
 
+        #
         # Part One
+        #
         n_things = len(things)
         print(f'\tNumber of things: {n_things}')
 
+        #
         # Part Two
-        n_chars = sum(map(len, map(Thing.get_line, things)))
-        print(f'\tTotal number of characters: {n_chars}')
+        #
 
         print()
 
