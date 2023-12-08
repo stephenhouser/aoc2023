@@ -6,26 +6,32 @@ Stephen Houser <stephenhouser@gmail.com>
 
 import re
 import argparse
+import math
 from functools import partial
 
 class Node:
+    """Represents a node in the map to traverse"""
+
     def __init__(self, text):
+        """Initialize from text string"""
         match = re.match(r'(\w+) = \((\w+), (\w+)\)', text)
         self.label = match.group(1)
         self.left = match.group(2)
         self.right = match.group(3)
 
     def __repr__(self):
+        """Return REPL for Node"""
         return str(self)
 
     def __str__(self):
+        """Return str for Node"""
         return f'{self.label} = ({self.left}, {self.right})'
 
 def load_file(filename: str):
-    """Load lines from file into a list of ITEMS
+    """Load directions and nodes from file
         
        filename: the file to read game descriptions from.
-       returns: a list of strings, one string for each row in the map
+       returns: tuple (directions, nodes)
     """
     directions = []
     nodes = {}
@@ -44,53 +50,29 @@ def load_file(filename: str):
     return (directions, nodes)
 
 def print_nodes(nodes):
+    """Pretty print nodes"""
     for (label, node) in nodes.items():
         if label[2] == 'A':
             print(f'{label} = ({node.left}, {node.right})')
 
-def traverse(directions, nodes):
-    """Return steps to traverse nodes using directions"""
+def traverse(is_end_func, node, directions, nodes):
+    """Return the number of steps to traverse
+        - starting from `node`
+        - ending when is_end_func(node.label) returns True
+        - using `directions` for each step
+        - using `nodes` as the mappings.
 
+       returns: number of steps/mappings
+    """
     steps = 0
-    node = nodes['AAA']
-    while node.label != 'ZZZ':
+    while not is_end_func(node.label):
         direction = directions[steps % len(directions)]
         steps += 1
-        #print(f'{label}: {direction} ->', end='')
 
         label = node.left if direction == 'L' else node.right
-        #print(f'{label}')
         node = nodes[label]
 
     return steps
-
-def traverse_multiple(directions, nodes):
-    """Return steps to traverse nodes using directions"""
-
-    steps = 0
-    start_nodes = list(filter(lambda x: x.label[2] == 'A', nodes.values()))
-    current = start_nodes
-    end_z = []
-
-    while len(end_z) != len(start_nodes):
-
-        direction = directions[steps % len(directions)]
-        steps += 1
-
-        next_nodes = []
-        print(f'{steps:10}: ', end='')
-        for node in current:
-            label = node.left if direction == 'L' else node.right
-            next_nodes.append(nodes[label])
-            c = '*' if label[2] == 'Z' else ' '
-            print(f'{node.label}:{direction} -> {nodes[label].label}{c} ', end='')
-
-        current = next_nodes
-        end_z = list(filter(lambda x: x.label[2] == 'Z', current))
-        print(len(end_z), '*' * len(end_z))
-
-    return steps
-
 
 def main():
     """Main Routine, does all the work"""
@@ -102,19 +84,39 @@ def main():
         print(filename)
         (directions, nodes) = load_file(filename)
 
+        #print(f'Directions: {directions}')
+        #print_nodes(nodes)
+
         #
         # Part One
         #
-        #print(f'Directions: {directions}')
-        #print_nodes(nodes)
-        #steps = traverse(directions, nodes)
-        #print(f'\tIt took {steps} steps to traverse the map.')
+
+        # Start with 'AAA'
+        start_node = nodes['AAA']
+        # partial function to traverse from start node to 'ZZZ' node
+        traverse_3z = partial(traverse, lambda l: l == 'ZZZ',
+                              directions=directions, nodes=nodes)
+        steps = traverse_3z(start_node)
+        print(f'\t1. It took {steps} steps to traverse from \'AAA\' to \'ZZZ\'')
 
         #
         # Part Two
         #
-        steps = traverse_multiple(directions, nodes)
-        print(f'\tIt took {steps} steps to traverse the map.')
+
+        # start with any node with a label ending with 'A'
+        start_nodes = filter(lambda x: x.label[2] == 'A', nodes.values())
+
+        # partial function to traverse from start node to 'xxZ' nodes
+        traverse_1z = partial(traverse, lambda l: l[2] == 'Z',
+                              directions=directions, nodes=nodes)
+
+        # map traversal onto all start nodes, get list of steps for each
+        steps = map(traverse_1z, start_nodes)
+
+        # least common multiple is where they will converge
+        lcm = math.lcm(*list(steps))
+
+        print(f'\tIt took {lcm} steps to traverse the map.')
 
         print()
 

@@ -30,9 +30,7 @@ BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)
 ```
 
-- takes 6 steps
-
-Example answer: _6440_
+Example answer: _6_
 
 Answer: _20569_
 
@@ -41,7 +39,8 @@ Answer: _20569_
 - run through multiple nodes at the same time.
 - start at all nodes ending with `A`
 - end when all current path nodes end with `Z`
+- how many steps to when they all end at the same time.
 
-Example answer __
+Example answer _6_
 
-Answer: _249138943_
+Answer: _21366921060721_
