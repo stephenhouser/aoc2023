@@ -57,47 +57,25 @@ def get_next_tile(grid, tile):
        Preference given to N, then E, S, W. 
        Approximation of _always go right_ from maze solving.
     """
+
     next_tile = None
     (x, y, direction) = tile
     match (grid[y][x][0], direction):
-        case ['-', 'W']:
+        case ['-', 'W'] | ['J', 'S'] | ['7', 'N']:
             next_tile = (x-1, y, 'W')
 
-        case ['-', 'E']:
+        case ['-', 'E'] | ['F', 'N'] | ['L', 'S']:
             next_tile = (x+1, y, 'E')
 
-        case ['|', 'S']:
+        case ['|', 'S'] | ['F', 'W'] | ['7', 'E']:
             next_tile = (x, y+1, 'S')
 
-        case ['|', 'N']:
-            next_tile = (x, y-1, 'N')
-
-        case ['J', 'E']:
-            next_tile = (x, y-1, 'N')
-
-        case ['J', 'S']:
-            next_tile = (x-1, y, 'W')
-
-        case ['F', 'W']:
-            next_tile = (x, y+1, 'S')
-
-        case ['F', 'N']:
-            next_tile = (x+1, y, 'E')
-
-        case ['7', 'E']:
-            next_tile = (x, y+1, 'S')
-
-        case ['7', 'N']:
-            next_tile = (x-1, y, 'W')
-
-        case ['L', 'S']:
-            next_tile = (x+1, y, 'E')
-
-        case ['L', 'W']:
+        case ['|', 'N'] | ['J', 'E'] | ['L', 'W']:
             next_tile = (x, y-1, 'N')
 
     #print(f'\t{grid[y][x]} {tile} --> {next_tile}')
     if len(grid[y][x]) == 1:
+        # Mark the tile as one we have traversed with a `*`
         grid[y][x] = grid[y][x] + '*'
 
     return next_tile
