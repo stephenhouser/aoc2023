@@ -1,5 +1,7 @@
 # Day 7: Camel Cards
 
+[Advent of Code 2023 -- Day 7](https://adventofcode.com/2023/day/7)
+
 ## Part One
 
 Each line represents a poker _hand_ and a _bid_.
