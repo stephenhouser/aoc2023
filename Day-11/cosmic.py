@@ -58,6 +58,27 @@ def expand_space(space):
 
     return space
 
+def expand_galaxies(space, galaxies, expansion=2):
+    for y in reversed(range(len(space))):
+        #print(f'Expand Y {y} {space[y]}')
+        if '#' not in space[y]:
+            for galaxy in galaxies.values():
+                if y < galaxy.location[1]:
+                    e_y = galaxy.location[1] + expansion -1 
+                    #print(f'\t{galaxy.id}:{galaxy.location[1]} -> {e_y}')
+                    galaxy.location = (galaxy.location[0], e_y)
+
+    col_space = [[space[j][i] for j in range(len(space))] for i in range(len(space[0]))]
+
+    for x in reversed(range(len(col_space))):
+        if '#' not in col_space[x]:
+            #print(f'Expand X {x} {col_space[x]}')
+            for galaxy in galaxies.values():
+                if x < galaxy.location[0]:
+                    e_x = galaxy.location[0] + expansion -1
+                    #print(f'\t{galaxy.id}:{galaxy.location[0]} -> {e_x}')
+                    galaxy.location = (e_x, galaxy.location[1])
+
 def find_galaxies(space):
     """Returns a dictionary of galaxies keyed by thier assigned numeric id
     """
@@ -107,8 +128,15 @@ def main():
         #
         # Part One
         #
-        space = expand_space(space)
+        e_space = expand_space(space)
+        e_galaxies = find_galaxies(e_space)
+        #print_space(e_space)
+        #print()
+        #print(e_galaxies)
+
         galaxies = find_galaxies(space)
+        expand_galaxies(space, galaxies, 1000000)
+        #print(galaxies)
 
         pairs = combinations(list(galaxies.keys()), 2)
         distances = map(lambda p: distance(galaxies[p[0]], galaxies[p[1]]), pairs)
