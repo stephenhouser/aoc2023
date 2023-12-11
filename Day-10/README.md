@@ -1,5 +1,7 @@
 # Day 10: Pipe Maze
 
+[Advent of Code 2023 -- Day 10](https://adventofcode.com/2023/day/10)
+
 # Part One
 
 - find the path starting with `S` in the map
