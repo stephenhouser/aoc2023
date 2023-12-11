@@ -40,31 +40,17 @@ def load_file(filename: str):
 
     return []
 
-def expand_space(space):
-    """Returns the expanded space map.
-       empty rows are doubled, empty columns are doubled
-    """
-    # accomplished by duplicating any empty rows, then transposing the
-    # list and doing the same again -- which will duplicate empty columns
-    # transpose again to get back to original form.
-    for _ in range(2):
-        n_space = []
-        for row in space:
-            n_space.append(row)
-            if '#' not in row:
-                n_space.append(row)
-
-        space = [[n_space[j][i] for j in range(len(n_space))] for i in range(len(n_space[0]))]
-
-    return space
-
 def expand_galaxies(space, galaxies, expansion=2):
+    """Expand galaxy locations based on empty rows and columns in space map
+        use expansion as expansion factor, 
+        e.g. 10 means each empty row is 10 rows
+    """
     for y in reversed(range(len(space))):
         #print(f'Expand Y {y} {space[y]}')
         if '#' not in space[y]:
             for galaxy in galaxies.values():
                 if y < galaxy.location[1]:
-                    e_y = galaxy.location[1] + expansion -1 
+                    e_y = galaxy.location[1] + expansion -1
                     #print(f'\t{galaxy.id}:{galaxy.location[1]} -> {e_y}')
                     galaxy.location = (galaxy.location[0], e_y)
 
@@ -105,6 +91,11 @@ def find_distances(galaxies):
     pairs = combinations(list(galaxies.keys()), 2)
     return list(map(lambda p: distance(galaxies[p[0]], galaxies[p[1]]), pairs))
 
+def sum_distances(galaxies):
+    """Return the sum of the distances between galaxy pairs.
+    """
+    return sum(find_distances(galaxies))
+
 def print_space(space):
     """Pretty print the space map
     """
@@ -128,23 +119,26 @@ def main():
         #
         # Part One
         #
-        e_space = expand_space(space)
-        e_galaxies = find_galaxies(e_space)
-        #print_space(e_space)
-        #print()
-        #print(e_galaxies)
 
+        # expand by 2
         galaxies = find_galaxies(space)
-        expand_galaxies(space, galaxies, 1000000)
-        #print(galaxies)
+        expand_galaxies(space, galaxies, 2)
 
-        pairs = combinations(list(galaxies.keys()), 2)
-        distances = map(lambda p: distance(galaxies[p[0]], galaxies[p[1]]), pairs)
-        print(f'\t1. The sum of the distances between galaxies is {sum(distances)}')
+        #pairs = combinations(list(galaxies.keys()), 2)
+        #distances = map(lambda p: distance(galaxies[p[0]], galaxies[p[1]]), pairs)
+        answer = sum_distances(galaxies)
+        print(f'\t1. The sum of the distances between galaxies is {answer}, with expansion=2')
 
         #
         # Part Two
         #
+
+        # expand by 1,000,000
+        galaxies = find_galaxies(space)
+        expand_galaxies(space, galaxies, 1000000)
+
+        answer = sum_distances(galaxies)
+        print(f'\t2. The sum of the distances between galaxies is {answer}, with expansion=1,000,000')
 
         print()
 
