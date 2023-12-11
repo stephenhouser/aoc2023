@@ -6,7 +6,48 @@ Stephen Houser <stephenhouser@gmail.com>
 
 import argparse
 from itertools import combinations
+import unittest
 
+
+#
+# Testing how things might work if I use Python unittest framework
+# for running the examples and the final solution code...
+#
+# These would replace the main() function.
+#
+class TestAOC(unittest.TestCase):
+    """Test Advent of Code"""
+
+    def test_part1_example1(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(galaxy_distances('test.txt', 2), 374)
+
+    def test_part1_solution(self):
+        """Live data for part 1 data from input.txt"""
+        self.assertEqual(galaxy_distances('input.txt', 2), 9742154)
+
+    def test_part2_example1(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(galaxy_distances('test.txt', 10), 1030)
+
+    def test_part2_example2(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(galaxy_distances('test.txt', 100), 8410)
+
+    def test_part2_solution(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(galaxy_distances('input.txt', 1000000), 411142919886)
+
+
+def galaxy_distances(filename, expansion):
+    """Return the sum of the distances beteen galaxy pairs as defined in the
+       space map from filename. Use expansion factor for expanding empty space
+       on the map
+    """
+    space = load_file(filename)
+    galaxies = find_galaxies(space)
+    expand_galaxies(space, galaxies, expansion)
+    return sum_distances(galaxies)
 
 class Galaxy:
     """A class of generic things"""
@@ -143,4 +184,5 @@ def main():
         print()
 
 if __name__ == '__main__':
-    main()
+    #main()
+    unittest.main()
