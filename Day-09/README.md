@@ -1,5 +1,7 @@
 # Day 9: Mirage Maintenance
 
+[Advent of Code 2023 -- Day 9](https://adventofcode.com/2023/day/9)
+
 ## Part One
 
 - working to predict next item in sequence based on differences of previous elements
