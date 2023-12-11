@@ -6,37 +6,76 @@ Stephen Houser <stephenhouser@gmail.com>
 
 import re
 import argparse
+import unittest
+import logging as log
+log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO)
+
+
+class TestAOC(unittest.TestCase):
+    """Test Advent of Code"""
+
+    #
+    # Part One
+    #
+    def test_part1_example(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(test_function('test.txt', 2), 0)
+
+    def test_part1_solution(self):
+        """Live data for part 1 data from input.txt"""
+        self.assertEqual(test_function('input.txt', 200), 0)
+
+    #
+    # Part Two
+    #
+    def test_part2_example(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(test_function('test.txt', 10), 0)
+
+    def test_part2_solution(self):
+        """Test example 1 data from test.txt"""
+        self.assertEqual(test_function('input.txt', 1000000), 0)
+
+
+def test_function(filename, *args):
+    """Loads sample data and calculates answer...
+    """
+    stuff = load_file(filename)
+    return len(stuff) * args[0]
+
 
 class Thing:
-    """A class of generic things"""
-
+    """Represents a ___"""
     def __init__(self, text):
         self._parse_line(text)
 
     def _parse_line(self, text):
-        """Parse text description of thing"""
+        """Parse text description of ___"""
         match = re.match(r'\d+', text)
 
     def __repr__(self):
-        """Return REPL representation of the thing"""
+        """Return REPL representation"""
         return str(self)
 
     def __str__(self):
-        """Return string representation of the thing"""
+        """Return string representation"""
         return f'Empty'
 
-def load_file(filename: str) -> list[Thing]:
-    """Load lines from file into a list of ITEMS
+def load_file(filename: str):
+    """Load lines from file into ___
         
        filename: the file to read game descriptions from.
-       returns: a list of strings, one string for each row in the map
+       returns: ...
     """
     try:
         with open(filename, 'r', encoding='utf-8') as file:
-            return list(map(Thing, file.readlines()))
+            # read a grid of text into 2D grid
+            return list(map(list,map(str.strip, file.readlines())))
+            # read a list of Thing
+            #return list(map(Thing, file.readlines()))
 
     except FileNotFoundError:
-        print(f'ERROR: file {filename} not found.')
+        log.error('File %s not found.', filename)
 
     return []
 
@@ -64,3 +103,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #unittest.main()
