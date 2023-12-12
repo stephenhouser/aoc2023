@@ -1,11 +1,10 @@
 #!/usr/bin/env/python3
 import time
-from functools import wraps
+from functools import wraps, partial
 from contextlib import contextmanager
 
 # https://www.learndatasci.com/solutions/python-timer/
 # https://dev.to/kcdchennai/python-decorator-to-measure-execution-time-54hk
-
 @contextmanager
 def perf_context():
     """Performance timer for use as a context (with)"""
@@ -44,3 +43,29 @@ def perf_timer(func):
         return result
 
     return _timer
+
+#
+# Memoized -- remember function calls and cache them
+#
+class memoized:
+    """Decorator. Caches a function's return value each time it is called.
+       If called later with the same arguments, the cached value is returned
+       (not reevaluated).
+    """
+    def __init__(self, func):
+        self.func = func
+        self.cache = {}
+
+    def __call__(self, *args):
+        if args in self.cache:
+            return self.cache[args]
+        else:
+            value = self.func(*args)
+            self.cache[args] = value
+            return value
+    def __repr__(self):
+        '''Return the function's docstring.'''
+        return self.func.__doc__
+    def __get__(self, obj, objtype):
+        '''Support instance methods.'''
+        return partial(self.__call__, obj)

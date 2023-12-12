@@ -10,7 +10,7 @@ import unittest
 from itertools import repeat
 from functools import reduce
 
-from performance import perf_timer, memoized
+from performance import memoized
 
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
@@ -121,7 +121,7 @@ def load_file(filename: str):
                 lines.append((observations, sequence))
 
     except FileNotFoundError:
-        log.error('File %s not found.', filename)
+        print(f'File {filename} not found.')
 
     return lines
 
