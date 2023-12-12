@@ -8,7 +8,7 @@ import re
 import argparse
 import unittest
 from itertools import repeat
-from functools import reduce
+from functools import reduce, cache
 
 from performance import memoized
 
@@ -40,7 +40,7 @@ class TestAOC(unittest.TestCase):
 #
 # Cache results by memoizing the function
 #
-@memoized
+@cache
 def matches_for(observations, sequence):
     """Return the number of possible sequence matches for observations
     """
