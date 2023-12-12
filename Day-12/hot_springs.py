@@ -20,22 +20,22 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 2), 0)
+        self.assertEqual(count_records('test.txt'), 21)
 
     def test_part1_solution(self):
         """Live data for part 1 data from input.txt"""
-        self.assertEqual(test_function('input.txt', 200), 0)
+        self.assertEqual(count_records('input.txt'), 6935)
 
     #
     # Part Two
     #
-    def test_part2_example(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 10), 0)
+    # def test_part2_example(self):
+    #     """Test example 1 data from test.txt"""
+    #     self.assertEqual(count_records('test.txt', 5), 525152)
 
-    def test_part2_solution(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('input.txt', 1000000), 0)
+    # def test_part2_solution(self):
+    #     """Test example 1 data from test.txt"""
+    #     self.assertEqual(count_records('input.txt', 5), 3920437278260)
 
 import collections
 import functools
@@ -66,64 +66,78 @@ class memoized(object):
     def __get__(self, obj, objtype):
         '''Support instance methods.'''
         return functools.partial(self.__call__, obj)
-  
 
-def test_function(filename, *args):
-    """Loads sample data and calculates answer...
-    """
-    stuff = load_file(filename)
-    return len(stuff) * args[0]
 
+# obs = "..#."
+# seq = (1, 2, 3)
 @memoized
-def expand_observations(hand, joker='?'):
-    """Return list of all possible hands with joker substitution
+def matches_for(observations, sequence, tabs=0, show=False):
+    if show: print('\t'*tabs, f'({observations}, {sequence})', end='')
 
-       Example: 'AJQ12' -> ['A2Q12', 'A1Q12', 'AQQ12', 'AAQ12']
+    if len(sequence) == 0:
+        no = observations.replace('.', '').replace('?', '')
+        if len(no) == 0:
+            # only dots and ? left
+            if show: print('\nONLY DOTS and ?')
+            return len(no) == 0
+        return 0
+        
+    if len(observations) == 0:
+        if show: print('\nOUT OF SEQUENCES')
+        return 0
+
+    if observations[0] == '.':
+        if show: print()
+        ans = matches_for(observations[1:], sequence, tabs)
+        #print(f'{ans}: No observations or seqences left')
+        return ans
+
+    # this chunk matches current sequence needs
+    if re.match('#[?#]{' + str(sequence[0]-1) + '}', observations):
+        if show: print(f' Match on #')
+        next = observations[sequence[0]:]
+        if len(next):
+            if next[0] == '#':
+                return 0
+            if next[0] == '?':
+                next = '.' + next[1:]
+
+        ans = matches_for(next, sequence[1:], tabs+1)
+        if show: print('\t'*tabs, f'={ans}: match on #')
+        return ans
+
+    if observations[0] == '?':
+        if show: print(' Encounter ?, recurse')
+        ans =  matches_for('#'+observations[1:], sequence, tabs+1) + \
+               matches_for('.'+observations[1:], sequence, tabs+1)
+        if show: print('\t'*tabs, f'={ans}: recursion on choice')
+        return ans
+
+
+    return 0
+
+def expand_records(records, expansion):
+    """Unfold the records by the given expansion factor
     """
-    if joker not in hand:
-        return [hand]
+    return map(lambda r:
+        ('?'.join(itertools.repeat(r[0], expansion)), r[1] * expansion),
+        records
+    )
+    # nr = []
+    # for (o, s) in records:
+    #     nr.append(('?'.join(itertools.repeat(o, expansion)), s * expansion))
 
-    replacements = ('.', '#')
-    hands = []
-    for card in hand:
-        if card == joker:
-            for replacement in replacements:
-                hands.extend(expand_observations(hand.replace(joker, replacement, 1)))
+    # return nr
 
-    return set(hands)
-
-def count_possible(record):
-    (observations, sequence) = record
-
-    seq_regex = make_regex(sequence)
-    valid = []
-    for possible in expand_observations(observations):
-        #print(f'\tEval: {possible} {seq_regex} ', end='')
-        if re.match(seq_regex, possible):
-            #print(' match', end='')
-            valid.append(possible)
-        #print()
-
-    return len(valid)
-
-def count_records(filename):
-    records = load_file(filename)
-
+def count_records(filename, expansion=1):
+    records = expand_records(load_file(filename), expansion)
     ans = 0
     for record in records:
-        print(f'{record}')
-        fix1 = count_possible(record)
-        print(f'{record} -> {fix1}\n')
-        ans += fix1
+        result = matches_for(record[0], tuple(record[1]))
+        #print(f'{result:5}: {record}')
+        ans += result
 
     return ans
-
-def make_regex(matches):
-    regex = '\.*'
-    for n in matches:
-        regex += '#{' + n + '}\.+'
-
-    return regex[:-1] + '*$'
 
 def load_file(filename: str):
     """Load lines from file into ___
@@ -136,7 +150,7 @@ def load_file(filename: str):
             lines = []
             for line in file.readlines():
                 (observations, sequence) = line.split()
-                sequence = re.findall(r'\d+', line)     
+                sequence = list(map(int, re.findall(r'\d+', line)))
                 lines.append((observations, sequence))
 
     except FileNotFoundError:
@@ -152,9 +166,7 @@ def main():
 
     for filename in args.filename:
         record_count = count_records(filename)
-
         print(record_count)
-
         print()
 
 if __name__ == '__main__':
