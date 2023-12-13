@@ -123,12 +123,12 @@ def reduce_calibration(filename, value_fn):
     return 0
 
 
-p1 = read_calibration('test.txt', line_value1) # 142
+p1 = read_calibration('test-1.txt', line_value1) # 142
 print(f'Initial calibration value is {p1} (142)')
-p2 = read_calibration('calibration.txt', line_value1) # 53386
+p2 = read_calibration('input.txt', line_value1) # 53386
 print(f'Initial calibration value is {p2} (53386)')
 
 p1 = reduce_calibration('test-2.txt', line_value2) # 281
 print(f'Final calibration value is {p1} (281)')
-p2 = reduce_calibration('calibration.txt', line_value2) # 53312
+p2 = reduce_calibration('input.txt', line_value2) # 53312
 print(f'Final calibration value is {p2} (53312)')

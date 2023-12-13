@@ -10,8 +10,6 @@ import unittest
 from itertools import repeat
 from functools import reduce, cache
 
-from performance import memoized
-
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
 
@@ -137,5 +135,5 @@ def main():
         print()
 
 if __name__ == '__main__':
-    #main()
-    unittest.main()
+    main()
+    #unittest.main()

@@ -132,8 +132,8 @@ def main():
         races = load_file(filename)
         print(f'1. Races: {races}')
 
-        winners_product = reduce(lambda a, c: c * a, map(race_times_brute, races), 1)
-        print(f'\t1. (brute) The product of winning race combinations is: {winners_product}')
+        # winners_product = reduce(lambda a, c: c * a, map(race_times_brute, races), 1)
+        # print(f'\t1. (brute) The product of winning race combinations is: {winners_product}')
 
         winners_product = reduce(lambda a, c: c * a, map(race_times_quadratic, races), 1)
         print(f'\t1. (quad)  The product of winning race combinations is: {winners_product}')
@@ -144,9 +144,9 @@ def main():
         races = load_race_2(filename)
         print(f'2. Races: {races}')
 
-        with multiprocessing.Pool(processes=4) as pool:
-            winners_product = reduce(lambda a, c: c * a, pool.map(race_times_brute, races), 1)
-            print(f'\t2. (brute) The product of winning race combinations is: {winners_product}')
+        # with multiprocessing.Pool(processes=4) as pool:
+        #     winners_product = reduce(lambda a, c: c * a, pool.map(race_times_brute, races), 1)
+        #     print(f'\t2. (brute) The product of winning race combinations is: {winners_product}')
 
         winners_product = reduce(lambda a, c: c * a, map(race_times_quadratic, races), 1)
         print(f'\t2. (quad)  The product of winning race combinations is: {winners_product}')
