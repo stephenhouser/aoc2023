@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day 13:Point of Incidence 
+Advent of Code 2023 - Day 13: Point of Incidence 
 Stephen Houser <stephenhouser@gmail.com>
 """
 
@@ -37,8 +37,8 @@ class TestAOC(unittest.TestCase):
 
 def summarize_reflection(island_map, smudges):
     """Return the reflection summary for a single map"""
-    reflection_row, reflection_col = find_reflection(island_map, smudges)
-    return reflection_col * 100 + reflection_row
+    reflection_col, reflection_row  = find_reflection(island_map, smudges)
+    return reflection_col + reflection_row * 100
 
 def summarize_reflections(filename, smudges=0):
     """Loads sample data file and returns summary answer
@@ -47,26 +47,33 @@ def summarize_reflections(filename, smudges=0):
     return sum((map(lambda x: summarize_reflection(x, smudges), maps)))
 
 def find_reflections_single(line):
-    """Returns all possible reflection points across a single line"""
+    """Returns list all possible reflection points across a single line"""
     reflections = []
-    for i in range(1, len(line)):   # start at offset 1 to end of line
-        left = list(reversed(line[:i]))
-        right = line[i:]
-        if all(map(lambda x, y: x==y, left, right)):
+    # start at offset 1 to end of line as there should be no reflection
+    # at offset 0 (or at the end of the line!)
+    for i in range(1, len(line)):
+        if all(map(lambda x, y: x==y, line[i:], reversed(line[:i]))):
             reflections.append(i)
-        # if all(map(lambda x: x[0]==x[1], zip(left, right))):
-        #     reflections.append(i)
 
     return reflections
+
+    # Here is my first version before compressing a little. Here for future me.
+    # reflections = []
+    # for i in range(1, len(line)):   # start at offset 1 to end of line
+    #     left = list(reversed(line[:i]))
+    #     right = line[i:]
+    #     if all(map(lambda x, y: x==y, left, right)):
+    #         reflections.append(i)
 
 def find_reflection(island_map, smudges):
     """Returns calculated (reflection_row, reflection_column)
         based on repairable `smudges`
     """
-
     result = []
+
     # Do this for the map and then the transposed map
-    #   ...to get reflection row (vertical) and column (vertical)
+    #   ...to get reflection column (vertical) and row (horizontal)
+    #   ...and add two elements to the result list ()
     for island in (island_map, tuple(map(list, zip(*island_map)))):
         # possible vertical reflection points, one for each row
         reflections = map(find_reflections_single, island)
@@ -80,10 +87,12 @@ def find_reflection(island_map, smudges):
         #   this reflection occurs in all but one rows.
         #   if we fix the one, it will be a reflection
         look_for =  len(island) - smudges
-        reflection_col = bins.index(look_for) if look_for in bins else 0
+        # If there is a reflection point, it will be the index of the bin
+        reflection_n = bins.index(look_for) if look_for in bins else 0
 
-        result.append(reflection_col)
+        result.append(reflection_n)
 
+    assert len(result) == 2, f'find_reflection() should return a 2-tuple'
     return result
 
 def print_grid(grid):

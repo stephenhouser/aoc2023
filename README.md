@@ -28,3 +28,5 @@ Contains my solutions to the [Advent of Code 2023](https://adventofcode.com/2023
 - [Day 9: Mirage Maintenance](https://adventofcode.com/2023/day/9) -- [solution](./Day-09)
 - [Day 10: Pipe Maze](https://adventofcode.com/2023/day/10) -- [solution](./Day-10)
 - [Day 11: Cosmic Expansion](https://adventofcode.com/2023/day/11) -- [solution](./Day-11)
+- [Day 12: Hot Springs](https://adventofcode.com/2023/day/12) -- [solution](./Day-12)
+- [Day 13: Point of Incidence](https://adventofcode.com/2023/day/13) -- [solution](./Day-13)
