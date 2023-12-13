@@ -63,8 +63,25 @@ def find_reflections_single(line):
 def find_reflections(island_map, smudges):
     """Returns calculated"""
 
+    result = []
+    for island in [island_map, tuple(map(list, zip(*island_map)))]:
+        # possible vertical reflection points, one for each row
+        reflections = map(find_reflections_single, island)
+        # merge them into one flat list
+        reflections = tuple(itertools.chain(*reflections))
+        # make histogram buckets
+        bins = tuple(map(reflections.count, range(len(island[0]))))
+        # look for bin with len(row) elements for a mirror;
+        #    this reflection occurs in every row
+        # look for bin with len(row)-1 elements for a fixable mirror;
+        #   this reflection occurs in all but one rows.
+        #   if we fix the one, it will be a reflection
+        look_for =  len(island) - smudges
+        reflection_col = bins.index(look_for) if look_for in bins else 0
 
+        result.append(reflection_col)
 
+    return result
 
     #
     # Vertical Mirrors
