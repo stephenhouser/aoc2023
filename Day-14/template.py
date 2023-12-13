@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day X: ...
+Advent of Code 2023 - Day 14: 
 Stephen Houser <stephenhouser@gmail.com>
 """
 
@@ -60,6 +60,7 @@ class Thing:
     def __str__(self):
         """Return string representation"""
         return f'Empty'
+
 
 def print_grid(grid):
     """Pretty print 2D grid in readable form"""
