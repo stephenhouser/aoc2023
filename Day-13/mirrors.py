@@ -4,13 +4,10 @@ Advent of Code 2023 - Day 13:Point of Incidence
 Stephen Houser <stephenhouser@gmail.com>
 """
 
-import re
 import argparse
 import unittest
-import logging as log
-log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO)
-from functools import reduce
 import itertools
+
 
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
@@ -20,57 +17,63 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt'), 405)
+        self.assertEqual(summarize_reflections('test.txt'), 405)
 
     def test_part1_solution(self):
         """Live data for part 1 data from input.txt"""
-        self.assertEqual(test_function('input.txt'), 37718)
+        self.assertEqual(summarize_reflections('input.txt'), 37718)
 
     #
     # Part Two
     #
     def test_part2_example(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 1), 400)
+        self.assertEqual(summarize_reflections('test.txt', 1), 400)
 
     def test_part2_solution(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('input.txt', 1), 40995)
+        self.assertEqual(summarize_reflections('input.txt', 1), 40995)
 
 
-def test_function(filename, smudges=0):
-    """Loads sample data and calculates answer...
+def summarize_reflection(island_map, smudges):
+    """Return the reflection summary for a single map"""
+    reflection_row, reflection_col = find_reflection(island_map, smudges)
+    return reflection_col * 100 + reflection_row
+
+def summarize_reflections(filename, smudges=0):
+    """Loads sample data file and returns summary answer
     """
     maps = load_file(filename)
-    return sum((map(lambda x: count_reflections(x, smudges), maps)))
-
-def count_reflections(island_map, smudges):
-    (reflection_col, reflection_row) = find_reflections(island_map, smudges)
-    return reflection_col * 100 + reflection_row
+    return sum((map(lambda x: summarize_reflection(x, smudges), maps)))
 
 def find_reflections_single(line):
     """Returns all possible reflection points across a single line"""
-    #print(line)
     reflections = []
     for i in range(1, len(line)):   # start at offset 1 to end of line
         left = list(reversed(line[:i]))
         right = line[i:]
-        if all(map(lambda x: x[0]==x[1], zip(left, right))):
+        if all(map(lambda x, y: x==y, left, right)):
             reflections.append(i)
+        # if all(map(lambda x: x[0]==x[1], zip(left, right))):
+        #     reflections.append(i)
 
     return reflections
 
-def find_reflections(island_map, smudges):
-    """Returns calculated"""
+def find_reflection(island_map, smudges):
+    """Returns calculated (reflection_row, reflection_column)
+        based on repairable `smudges`
+    """
 
     result = []
-    for island in [island_map, tuple(map(list, zip(*island_map)))]:
+    # Do this for the map and then the transposed map
+    #   ...to get reflection row (vertical) and column (vertical)
+    for island in (island_map, tuple(map(list, zip(*island_map)))):
         # possible vertical reflection points, one for each row
         reflections = map(find_reflections_single, island)
         # merge them into one flat list
-        reflections = tuple(itertools.chain(*reflections))
+        reflections_flat = tuple(itertools.chain(*reflections))
         # make histogram buckets
-        bins = tuple(map(reflections.count, range(len(island[0]))))
+        bins = tuple(map(reflections_flat.count, range(len(island[0]))))
         # look for bin with len(row) elements for a mirror;
         #    this reflection occurs in every row
         # look for bin with len(row)-1 elements for a fixable mirror;
@@ -83,44 +86,11 @@ def find_reflections(island_map, smudges):
 
     return result
 
-    #
-    # Vertical Mirrors
-    #
-    # possible vertical reflection points, one for each row
-    reflections = map(find_reflections_single, island_map)
-    # merge them into one flat list
-    reflections = tuple(itertools.chain(*reflections))
-    # make histogram buckets
-    bins = tuple(map(reflections.count, range(len(island_map[0]))))
-    # look for bin with len(row) elements for a mirror;
-    #    this reflection occurs in every row
-    # look for bin with len(row)-1 elements for a fixable mirror;
-    #   this reflection occurs in all but one rows.
-    #   if we fix the one, it will be a reflection
-    look_for =  len(island_map) - smudges
-    reflection_col = bins.index(look_for) if look_for in bins else 0
-
-    #
-    # Horizontal Mirrors
-    #
-    transposed_map =  tuple(map(list, zip(*island_map)))
-    # possible horizontal reflection points, one for each row
-    reflections = map(find_reflections_single, transposed_map)
-    # merge them into one flat list
-    reflections = tuple(itertools.chain(*reflections))
-    # make histogram buckets
-    bins = tuple(map(reflections.count, range(len(transposed_map[0]))))
-
-    look_for = len(transposed_map) - smudges
-    reflection_row = bins.index(look_for) if look_for in bins else 0
-
-    return (reflection_row, reflection_col)
-
 def print_grid(grid):
     """Pretty print 2D grid in readable form"""
-    for r in grid:
-        for c in r:
-            print(c, end='')
+    for row in grid:
+        for col in row:
+            print(col, end='')
         print()
 
 def load_file(filename: str):
@@ -130,7 +100,7 @@ def load_file(filename: str):
             return tuple(map(lambda x: x.split('\n'), file.read().split('\n\n')))
 
     except FileNotFoundError:
-        log.error('File %s not found.', filename)
+        print('File %s not found.', filename)
 
     return []
 
@@ -144,24 +114,16 @@ def main():
         print(filename)
         maps = load_file(filename)
 
-        #
         # Part One
-        #
-        reflections = list(map(count_reflections, maps))
-        reflection_sum = [sum(x) for x in zip(*reflections)]
-        ref_summary = reflection_sum[0] + reflection_sum[1]
-        print(f'\tNumber of reflections: {ref_summary}') #29366
+        summary = sum((map(lambda x: summarize_reflection(x, 0), maps)))
+        print(f'\t1. Number of reflections (no fixes)    : {summary}')
 
-        #
         # Part Two
-        #
-        reflections = list(map(find_smudge, maps))
-        reflection_sum = [sum(x) for x in zip(*reflections)]
-        ref_summary = reflection_sum[0] + reflection_sum[1]
-        print(f'\tNumber of reflections: {ref_summary}') #29366
+        summary = sum((map(lambda x: summarize_reflection(x, 1), maps)))
+        print(f'\t2. Number of reflections (fixed smudge): {summary}')
 
         print()
 
 if __name__ == '__main__':
-    #main()
-    unittest.main()
+    main()
+    #unittest.main()
