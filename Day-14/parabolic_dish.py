@@ -10,6 +10,8 @@ import unittest
 import logging as log
 import hashlib
 import itertools
+from cProfile import Profile
+from functools import cache
 
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
@@ -63,9 +65,29 @@ def flip_lr(grid):
     """Return a Left-Right flipped (L<->R) grid"""
     return tuple(map(tuple, map(reversed, grid)))
 
+# Original code
+#   2267323 function calls (2267297 primitive calls) in 0.742 seconds
+# replace .count with O(n) roller
+#     59201 function calls (59175 primitive calls)   in 0.575 seconds
+# use @cache
+#     23913 function calls (23887 primitive calls) in 0.142 seconds
+@cache
 def roll_row_west(row):
     """Returns the value of a single row after a Westward roll.
     """
+    new_row = list(row[:])
+    last = 0
+    for i, ch in enumerate(new_row):
+        if ch == 'O':
+            new_row[i] = '.'
+            new_row[last] = 'O'
+            last += 1
+        elif ch == '#':
+            last = i + 1
+
+    return new_row
+
+def roll_row_west_slow(row):
     blocks = re.findall(r'[.O]*#*', ''.join(row))
 
     n_row = ''
@@ -182,9 +204,13 @@ def main():
         #
         # Part Two
         #
-        dish = tilt_cycles(dish, 1_000_000_000)
-        weight = calculate_weight(dish)
-        print(f'\t2. The weight on the north beam: {weight}')
+        with Profile() as profile:
+            dish = tilt_cycles(dish, 1_000_000_000)
+            weight = calculate_weight(dish)
+            print(f'\t2. The weight on the north beam: {weight}')
+
+            #profile.print_stats('time')
+
         #print_grid(dish)
         #print()
 
