@@ -91,18 +91,27 @@ def roll_cycles(dish, cycles):
         the final dish arrangement after `cycles`
     """
     arrangements = {}               # cache past arrangement (hash values)
-
-    # First, find the cycle in the arrangements
-    cycle = (None, None)            # (start, length) of cycle (result of loop)
-    for i in range(cycles):         # start counting at 1 end before cycles
-        dish_key = map_hash(dish)   # have we seen this arrangement before
-        if dish_key in arrangements:
-            prev = arrangements[dish_key]
-            cycle = (prev, i-prev)
-            break                   # stop the madness
-
+    
+    i = 0
+    while dish_key := map_hash(dish) not in arrangements:
         arrangements[dish_key] = i  # save the arrangement
         dish = roll_cycle(dish)     # roll it around
+        i += 1
+
+    prev = arrangements[dish_key]
+    cycle = (prev, i-prev)
+
+    # # First, find the cycle in the arrangements
+    # cycle = (None, None)            # (start, length) of cycle (result of loop)
+    # for i in range(cycles):         # start counting at 1 end before cycles
+    #     dish_key = map_hash(dish)   # have we seen this arrangement before
+    #     if dish_key in arrangements:
+    #         prev = arrangements[dish_key]
+    #         cycle = (prev, i-prev)
+    #         break                   # stop the madness
+
+    #     arrangements[dish_key] = i  # save the arrangement
+    #     dish = roll_cycle(dish)     # roll it around
 
     # The target cycle is `end_offset` rolls from the start of the repeating
     # cycle. We can just play that many more forward and end at the same 
