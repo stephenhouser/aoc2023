@@ -7,7 +7,7 @@
 - input is fixed items '#', movable rocks 'O' and empty space '.'
 - "tilt" the platform and all the 'O' rocks move that direction
 - calculate load as sum of
-    - number of rocks in row * (row index) from bottom to top
+- number of rocks in row * (row index) from bottom to top
 - Answer is total load
 
 Example:
@@ -43,12 +43,10 @@ Example answer: _136_
 
 ## Part Two
 
-- roll the rocks, north, west, south east (a cycle)
-- for 1_000_000_000 cycles
-- answer is total load again
+- Roll the platform through 1_000_000_000 cycles of N,W,S,E
+- The answer is the `weight` at the end (same as part 1)
 
-- find when we loop, then calculate remainder
-
+- NOTE: find when we loop, then calculate remainder based on mod (%)
 
 After 1 cycle:
 ```
@@ -89,21 +87,7 @@ After 3 cycles:
 ....O#...O
 .......OOO
 #...O###.O
-#.OOO#...O```
+#.OOO#...O
+```
 
 Example answer: _64_
-
-
-cycle starts at 107 and is 11 long
-
-REPEAT at 107 of 96
-REPEAT at 108 of 97
-REPEAT at 109 of 98
-REPEAT at 110 of 99
-REPEAT at 111 of 100
-REPEAT at 112 of 101
-REPEAT at 113 of 102
-REPEAT at 114 of 103
-REPEAT at 115 of 104
-REPEAT at 116 of 105
-REPEAT at 117 of 106
