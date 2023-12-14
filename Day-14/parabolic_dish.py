@@ -88,14 +88,7 @@ def roll_row(row):
 
 #   N  W  S    E
 #   tt x tfft  f
-MEMORY = {}
-def roll_cycle(dish, cycle_n):
-    digest = hash_value(dish)
-    if digest in MEMORY:
-        (o_cycle, dish) = MEMORY[digest]
-        print(f'REPEAT at {cycle_n} of {o_cycle}')
-        return dish
-    
+def roll_cycle(dish):
     # north
     dish = transpose(map(roll_row, transpose(dish)))
     # west
@@ -105,7 +98,6 @@ def roll_cycle(dish, cycle_n):
     #east
     dish = flip(map(roll_row, flip(dish)))
 
-    MEMORY[digest] = (cycle_n, dish)
     return dish
 
 def hash_value(dish):
@@ -165,27 +157,35 @@ def main():
         #
         # Part Two
         #
+        cycles = 1_000_000_000
 
-# ...999999998  = 96105
+        cycle_start = None
+        cycle_length = None
+        arrangements = {}
+        for i in range(1, cycles+1):  # start counting at 1 end before cycles
+            dish_key = hash_value(dish)
+            if dish_key in arrangements:
+                (prev, dish) = arrangements[dish_key]
+                print(f'Cycle {i} repeats cycle {prev}', end=' ')
+                cycle_start = prev
+                cycle_length = i - prev
+                break
+            else:
+                dish = roll_cycle(dish)
 
-        for i in range(96):
-            dish = roll_cycle(dish, i)
+            if cycle_start:
+                print(f'weight={calculate_weight(dish)}')
 
-        while i < 1_000_000_000:
-            i += 11
+            arrangements[dish_key] = (i, dish)
 
-        i -= 11
-        print(f'restart at {i}')
-        while i < 1_000_000_010:
-            dish = roll_cycle(dish, i)
-            weight = calculate_weight(dish)
-            print(f'...{i} = {weight}')
-            i += 1
+        print(f'Arrangements repeat starting at {cycle_start} and every {cycle_length} cycles')
 
-        # cycle starts at 96 and repeats every 11
-        # start = 999,999,904 # 1_000_000_000 - 96
-        # start = 96 + 90,909,082
-        # for i in range(start, 1_000_000_00)
+        # offset restart to where we can restart the cycle
+        # and it will hit the
+        skip_cycles = (cycles - cycle_start) / cycle_length
+        restart = cycle_start + (int(skip_cycles) * cycle_length)
+        for i in range(restart+1, cycles+1):
+            dish = roll_cycle(dish)
 
         weight = calculate_weight(dish)
         print(f'\t2. The weight on the north beam ({i}): {weight}')
