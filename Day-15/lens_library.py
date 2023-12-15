@@ -15,24 +15,34 @@ class TestAOC(unittest.TestCase):
     #
     # Part One
     #
+    def test_part1_sample(self):
+        """Part 1: Test text in problem description"""
+        self.assertEqual(hash_text('HASH'), 52)
+
     def test_part1_example(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 2), 0)
+        """Part 1: Test example data from test.txt"""
+        sequence = load_file('test.txt')
+        self.assertEqual(hash_summary(sequence), 1320)
 
     def test_part1_solution(self):
-        """Live data for part 1 data from input.txt"""
-        self.assertEqual(test_function('input.txt', 200), 0)
+        """Part 1: Solution from input.txt"""
+        sequence = load_file('input.txt')
+        self.assertEqual(hash_summary(sequence), 495972)
 
     #
     # Part Two
     #
     def test_part2_example(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 10), 0)
+        """Part 2: Test example data from test.txt"""
+        sequence = load_file('test.txt')
+        power = focus_power(initialize_mirrors(sequence))
+        self.assertEqual(power, 145)
 
     def test_part2_solution(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('input.txt', 1000000), 0)
+        """Part 2: Solution from input.txt"""
+        sequence = load_file('input.txt')
+        power = focus_power(initialize_mirrors(sequence))
+        self.assertEqual(power, 245223)
 
 
 def load_file(filename: str):
@@ -50,33 +60,64 @@ def load_file(filename: str):
 
     return []
 
-def e_hash(item):
-    return reduce(lambda a, c: ((a+ord(c))*17)%256, item, 0)
-    # ans = 0
-    # for i in item:
-    #     ans = ((ans +ord(i)) * 17) % 256
+def hash_text(text):
+    """Return the HASH value for `text`
+    """
+    return reduce(lambda a, c: ((a+ord(c))*17)%256, text, 0)
 
-    # return ans
+def hash_summary(sequence):
+    """Return the sum of the HASH algorithm across steps in sequence
+    """
+    return reduce(lambda a, c: a+hash_text(c), sequence, 0)
 
-label_re = re.compile('[a-z]+')
-def label_hash(item):
-    label = label_re.findall(item)[0]
-    return reduce(lambda a, c: ((a+ord(c))*17)%256, label, 0)
 
 step_re = re.compile(r'([a-z]+)([-=])(\d*)')
-def parse_step(step):
+def initialization_step(boxes, step):
+    """Perform `step` in the initializtion sequence and update `boxes`
+    """
     match = step_re.match(step)
+    label = match.group(1)
+    box_n = hash_text(label)
+
     if match.group(2) == '=':
-        return (match.group(1), match.group(3))
+        boxes[box_n][label] = int(match.group(3))
+    elif label in boxes[box_n]:
+        assert(match.group(2) == '-')
+        del boxes[box_n][label]
 
-    return (match.group(1), None)
+def initialize_mirrors(sequence):
+    """Return list of boxes from following initialization sequence"""
+    boxes = [{} for _ in range(256)]
+    
+    for step in sequence:
+        initialization_step(boxes, step)
 
+    return boxes
+
+def focus_power_single(box_index, lenses):
+    """Return the focusing power of box with `box_index` and `lenses`"""
+    summary = 0
+    for slot, focal_length in enumerate(lenses.values()):
+        summary += (box_index+1) * (slot+1) * focal_length
+        
+    return summary
+
+def focus_power(boxes):
+    """Returns the focusing power of the lens configuration.
+        The sum of the focusing power of all boxes.
+    """
+    return reduce(lambda a, c: a+focus_power_single(c[0], c[1]), 
+                  enumerate(boxes),
+                  0)
 
 def main():
     """Main Routine, does all the work"""
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', default='input.txt', nargs='+')
     args = parser.parse_args()
+
+    example = hash_text('HASH')
+    print(f'The example string "HASH" hashes to {example}')
 
     for filename in args.filename:
         print(filename)
@@ -85,39 +126,15 @@ def main():
         #
         # Part One
         #
-        n_things = len(sequence)
-        #print(f'\tNumber of things: {sequence}')
+        solution = hash_summary(sequence)
+        print(f'\t1. The hash summary is: {solution}')
 
-        e_hash('HASH')
-        ans = reduce(lambda a, c: a+e_hash(c), sequence, 0)
-        print(ans)
         #
         # Part Two
         #
-        boxes = [{} for _ in range(256)]
-        for step in sequence:
-            label, op = parse_step(step)
-            box = e_hash(label)
-            #print(step, ' --> ', label, op, e_hash(label))
-
-            if op:
-                boxes[box][label] = int(op)
-            elif label in boxes[box]: # -
-                del boxes[box][label]
-
-            #print(boxes[:5])    
-
-        ans = 0
-        for box, cont in enumerate(boxes):
-            if cont:
-                sub = 0
-                for s, l in enumerate(cont.values()):
-                    sub += (1 + box) * (s+1) * l
-                    print(f'\t (1+{box}) * {s+1} * {l} = {sub}')
-
-                ans += sub
-
-        print(ans)
+        boxes = initialize_mirrors(sequence)
+        power = focus_power(boxes)
+        print(f'\t2. The focusing power of the configuration is: {power}')
 
 if __name__ == '__main__':
     main()
