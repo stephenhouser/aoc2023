@@ -35,20 +35,6 @@ class TestAOC(unittest.TestCase):
         self.assertEqual(test_function('input.txt', 1000000), 0)
 
 
-def test_function(filename, *args):
-    """Loads sample data and calculates answer...
-    """
-    stuff = load_file(filename)
-    return len(stuff) * args[0]
-
-
-def print_grid(grid):
-    """Pretty print 2D grid in readable form"""
-    for row in grid:
-        for col in row:
-            print(col, end='')
-        print()
-
 def load_file(filename: str):
     """Load lines from file into ___
         
@@ -57,14 +43,10 @@ def load_file(filename: str):
     """
     try:
         with open(filename, 'r', encoding='utf-8') as file:
-            # read a grid of text into 2D grid
-
             return file.read().strip().split(',')
-            # read a list of Thing
-            #return list(map(Thing, file.readlines()))
 
     except FileNotFoundError:
-        log.error('File %s not found.', filename)
+        print('File %s not found.', filename)
 
     return []
 
@@ -75,6 +57,19 @@ def e_hash(item):
     #     ans = ((ans +ord(i)) * 17) % 256
 
     # return ans
+
+label_re = re.compile('[a-z]+')
+def label_hash(item):
+    label = label_re.findall(item)[0]
+    return reduce(lambda a, c: ((a+ord(c))*17)%256, label, 0)
+
+step_re = re.compile(r'([a-z]+)([-=])(\d*)')
+def parse_step(step):
+    match = step_re.match(step)
+    if match.group(2) == '=':
+        return (match.group(1), match.group(3))
+
+    return (match.group(1), None)
 
 
 def main():
@@ -99,8 +94,30 @@ def main():
         #
         # Part Two
         #
+        boxes = [{} for _ in range(256)]
+        for step in sequence:
+            label, op = parse_step(step)
+            box = e_hash(label)
+            #print(step, ' --> ', label, op, e_hash(label))
 
-        print()
+            if op:
+                boxes[box][label] = int(op)
+            elif label in boxes[box]: # -
+                del boxes[box][label]
+
+            #print(boxes[:5])    
+
+        ans = 0
+        for box, cont in enumerate(boxes):
+            if cont:
+                sub = 0
+                for s, l in enumerate(cont.values()):
+                    sub += (1 + box) * (s+1) * l
+                    print(f'\t (1+{box}) * {s+1} * {l} = {sub}')
+
+                ans += sub
+
+        print(ans)
 
 if __name__ == '__main__':
     main()
