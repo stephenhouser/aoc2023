@@ -31,3 +31,4 @@ Contains my solutions to the [Advent of Code 2023](https://adventofcode.com/2023
 - [Day 12: Hot Springs](https://adventofcode.com/2023/day/12) -- [solution](./Day-12)
 - [Day 13: Point of Incidence](https://adventofcode.com/2023/day/13) -- [solution](./Day-13)
 - [Day 14: Parabolic Reflector Dish](https://adventofcode.com/2023/day/14) -- [solution](./Day-14)
+- [Day 15: Lens Library](https://adventofcode.com/2023/day/15) -- [solution](./Day-15)

@@ -209,7 +209,7 @@ def main():
             weight = calculate_weight(dish)
             print(f'\t2. The weight on the north beam: {weight}')
 
-            #profile.print_stats('time')
+            profile.print_stats('time')
 
         #print_grid(dish)
         #print()

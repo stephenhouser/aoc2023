@@ -8,6 +8,7 @@ import re
 import argparse
 import unittest
 from functools import reduce
+from cProfile import Profile
 
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
@@ -82,13 +83,13 @@ def initialization_step(boxes, step):
     if match.group(2) == '=':
         boxes[box_n][label] = int(match.group(3))
     elif label in boxes[box_n]:
-        assert(match.group(2) == '-')
+        #assert match.group(2) == '-'
         del boxes[box_n][label]
 
 def initialize_mirrors(sequence):
     """Return list of boxes from following initialization sequence"""
     boxes = [{} for _ in range(256)]
-    
+
     for step in sequence:
         initialization_step(boxes, step)
 
@@ -99,14 +100,14 @@ def focus_power_single(box_index, lenses):
     summary = 0
     for slot, focal_length in enumerate(lenses.values()):
         summary += (box_index+1) * (slot+1) * focal_length
-        
+
     return summary
 
 def focus_power(boxes):
     """Returns the focusing power of the lens configuration.
         The sum of the focusing power of all boxes.
     """
-    return reduce(lambda a, c: a+focus_power_single(c[0], c[1]), 
+    return reduce(lambda a, c: a+focus_power_single(c[0], c[1]),
                   enumerate(boxes),
                   0)
 
@@ -123,18 +124,21 @@ def main():
         print(filename)
         sequence = load_file(filename)
 
-        #
-        # Part One
-        #
-        solution = hash_summary(sequence)
-        print(f'\t1. The hash summary is: {solution}')
+        with Profile() as profile:
+            #
+            # Part One
+            #
+            solution = hash_summary(sequence)
+            print(f'\t1. The hash summary is: {solution}')
 
-        #
-        # Part Two
-        #
-        boxes = initialize_mirrors(sequence)
-        power = focus_power(boxes)
-        print(f'\t2. The focusing power of the configuration is: {power}')
+            #
+            # Part Two
+            #
+            boxes = initialize_mirrors(sequence)
+            power = focus_power(boxes)
+            print(f'\t2. The focusing power of the configuration is: {power}')
+
+            profile.print_stats('cumtime')
 
 if __name__ == '__main__':
     main()
