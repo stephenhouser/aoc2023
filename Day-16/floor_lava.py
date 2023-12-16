@@ -5,6 +5,7 @@ Stephen Houser <stephenhouser@gmail.com>
 """
 
 import re
+import copy
 import argparse
 import unittest
 import logging as log
@@ -53,77 +54,53 @@ def test_function(filename, *args):
 def is_marked(grid, beam):
     return grid[beam[0]][beam[1]][1] == '#'
 
+def is_valid(grid, y, x):
+    if 0 <= y < len(grid) and 0 <= x < len(grid[0]):
+        return True
+
+    return False
+
 # moves to next lasewr location
-BEAMS = {}
+BEAMS = set()
 def shoot_laser(grid, beam):
     y, x, dy, dx = beam
 
-    # off end
-    if y < 0 or y >= len(grid) or x < 0 or x >= len(grid[0]):
-        return 1
+    # goes off edge of board or alreadly traversed
+    if not is_valid(grid, y, x) or beam in BEAMS:
+        return 0
 
-    if beam in BEAMS:
-        return 1
+    # mark this path as traversed
+    BEAMS.add(beam)
 
-    BEAMS[beam] = 1
+    # Score when we mark it
+    score = 0 if grid[y][x][1] == '#' else 1
+    grid[beam[0]][beam[1]][1] = '#'
 
-    print(f'\t{beam} : {grid[beam[0]][beam[1]]})')
+    # print(f'\t{beam} : {grid[y][x]}) {score}')
 
     grid_op = grid[beam[0]][beam[1]][0]
     if grid_op == '\\':
-        # E->S, S->E, W->N, N->W
-        # E (0, 1) -> S(1, 0)
-        # S (1, 0) -> E(0, 1)
-        # N (-1, 0) -> W(0, -1)
-        # W (0, -1) -> N(-1, 0)
-        grid[beam[0]][beam[1]][1] = '#'
-        new_beam = (y+dx, x+dy, dx, dy)
-        return shoot_laser(grid, new_beam)
+        score += shoot_laser(grid, (y+dx, x+dy, dx, dy))
     elif grid_op == '/':
-        # E (0, 1) -> N(-1, 0)
-        # S (1, 0) -> W(0, -1)
-        # W(0, -1) -> S(1, 0)
-        # N(0, -1) -> E(1,0)
-        grid[beam[0]][beam[1]][1] = '#'
-        new_beam = (y-dx, x-dy, -dx, -dy)
-        return shoot_laser(grid, new_beam)
-    elif grid_op == '-':
-        grid[beam[0]][beam[1]][1] = '#'
-        if dy:
-            b1 = (y-dx, x-dy, -dx, -dy)
-            b2 = (y+dx, x+dy, dx, dy)
-            return shoot_laser(grid, b1) + shoot_laser(grid, b2)
-        else:
-            new_beam = (y+dy, x+dx, dy, dx)
-            return shoot_laser(grid, new_beam)
-    elif grid_op == '|':
-        print('poof')
-        grid[beam[0]][beam[1]][1] = '#'
-        if dx:
-            b1 = (y-dx, x-dy, -dx, -dy)
-            b2 = (y+dx, x+dy, dx, dy)
-            return shoot_laser(grid, b1) + shoot_laser(grid, b2)
-        else:
-            new_beam = (y+dy, x+dx, dy, dx)
-            return shoot_laser(grid, new_beam)
-
-    # if grid[beam[0]][beam[1]][1] == '#':
-    #     return 1
-
-    grid[beam[0]][beam[1]][1] = '#'
-
-    y, x = y+dy, x+dx
-    if y < 0 or y >= len(grid) or x < 0 or x >= len(grid[0]):
-        return 1
-    
-    while grid[y][x][0] == '.':
-        grid[y][x][1] = '#'
+        score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy))
+    elif grid_op == '-' and dy:
+        score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy)) + \
+                 shoot_laser(grid, (y+dx, x+dy, dx, dy))
+    elif grid_op == '|' and dx:
+        score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy)) + \
+                 shoot_laser(grid, (y+dx, x+dy, dx, dy))
+    else:
         y, x = y+dy, x+dx
-        if y < 0 or y >= len(grid) or x < 0 or x >= len(grid[0]):
-            return 1
+        while is_valid(grid, y, x) and grid[y][x][0] == '.':
+            # Score when we mark it
+            score += 0 if grid[y][x][1] == '#' else 1
+            grid[y][x][1] = '#'
+            #print(f'\t {y}, {x}, {dy}, {dx}  : {grid[y][x]} {score}')
+            y, x = y+dy, x+dx
 
-    new_beam = (y, x, dy, dx)
-    return shoot_laser(grid, new_beam)
+        score += shoot_laser(grid, (y, x, dy, dx))
+
+    return score
 
 def grid_value(grid):
     sum = 0
@@ -139,6 +116,11 @@ def print_grid(grid):
             print(f'{col[0]}{col[1]}', end=' ')
         print()
 
+def clear_marks(grid):
+    """Pretty print 2D grid in readable form"""
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            grid[y][x][1] = '.'
 
 def print_marks(grid):
     """Pretty print 2D grid in readable form"""
@@ -183,19 +165,34 @@ def main():
         print(filename)
         floor_map = load_file(filename)
 
-        print_grid(floor_map)
-        shoot_laser(floor_map, (0, 0, 0, 1))
-        print_marks(floor_map)
-
-        print(grid_value(floor_map))
         #
         # Part One
         #
-        # print(f'\tNumber of things: {n_things}')
+        #print_grid(floor_map)
+        BEAMS.clear()
+        energized = shoot_laser(copy.deepcopy(floor_map), (0, 0, 0, 1))
+        # print_marks(floor_map)
+        print(f'\t1. Energized tiles: {energized}')
 
         #
         # Part Two
         #
+        max_y = len(floor_map)
+        max_x = len(floor_map[0])
+        energized = []
+        for y in range(max_y):
+            BEAMS.clear()
+            energized.append(shoot_laser(copy.deepcopy(floor_map), (y, 0, 0, 1)))
+            BEAMS.clear()
+            energized.append(shoot_laser(copy.deepcopy(floor_map), (y, max_x, 0, -1)))
+        for x in range(max_x):
+            BEAMS.clear()
+            energized.append(shoot_laser(copy.deepcopy(floor_map), (0, x, 1, 0)))
+            BEAMS.clear()
+            energized.append(shoot_laser(copy.deepcopy(floor_map), (max_y, x, -1, 0)))
+
+        # print(energized)
+        print(f'\t1. Max Energized tiles: {max(energized)}')
 
         print()
 
