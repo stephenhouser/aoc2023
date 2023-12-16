@@ -7,8 +7,6 @@ Stephen Houser <stephenhouser@gmail.com>
 import re
 import argparse
 import unittest
-import logging as log
-log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO)
 
 
 class TestAOC(unittest.TestCase):
@@ -82,7 +80,7 @@ def load_file(filename: str):
             #return list(map(Thing, file.readlines()))
 
     except FileNotFoundError:
-        log.error('File %s not found.', filename)
+        print('File %s not found.', filename)
 
     return []
 

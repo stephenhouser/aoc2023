@@ -119,7 +119,7 @@ def shoot_laser(grid, beam, visited=None):
 
 def starting_beams(grid):
     """Return list of all starting locations and directions"""
-    s_beams = []        
+    s_beams = []
     max_y = len(grid)
     max_x = len(grid[0])
     for y in range(max_y):
@@ -133,12 +133,12 @@ def starting_beams(grid):
     return s_beams
 
 def maximum_beam(grid):
+    """Return the maximim energized beams, main func for part 2"""
     energized = []
     for beam in starting_beams(grid):
         energized.append(shoot_laser(copy.deepcopy(grid), beam))
 
     return max(energized)
-
 
 def print_grid(grid):
     """Pretty print 2D grid in readable form"""
@@ -181,10 +181,10 @@ def load_file(filename: str):
     return []
 
 #
-# This is an alternate solution from reddit user 4HbQ in the 
-# solutions thread. The key learning from this is the ability 
+# This is an alternate solution from reddit user 4HbQ in the
+# solutions thread. The key learning from this is the ability
 # to use complex numbers for this type of navigation
-# 
+#
 # 1. (x, y) -> complex(x, y).  1 -> (1, 0), 1j -> (0, 1)
 # 2. You can do math if you also have direction as an imaginary
 #    number... and transforms (turns, etc)
@@ -193,34 +193,35 @@ def load_file(filename: str):
 # 4. use tiles.get(pos) which will return None if pos is not in the map.
 #
 def traverse_complex(complex_map, todo):
+    """Return number of energized tiles using complex number variant"""
     done = set()    # keep track of where we have been
     while todo:     # process each item in list
-        pos, dir = todo.pop()
-        while not (pos, dir) in done:
-            done.add((pos, dir))    # don't re-traverse in same direction
-            pos += dir              # move to next
+        pos, bdir = todo.pop()
+        while not (pos, bdir) in done:
+            done.add((pos, bdir))    # don't re-traverse in same direction
+            pos += bdir              # move to next
             match complex_map.get(pos):
                 case '|':
                     # go south, add todo to go north
-                    dir = complex(0, 1) # 1j,  currenet path
+                    bdir = complex(0, 1) # 1j,  currenet path
                     # split path, track this down later
-                    todo.append((pos, -dir))
+                    todo.append((pos, -bdir))
                 case '-':
                     # go west, add todo to go east
-                    dir = complex(-1, 0) # -1, current path
+                    bdir = complex(-1, 0) # -1, current path
                     # split path, track this down later
-                    todo.append((pos, -dir))
+                    todo.append((pos, -bdir))
                 case '/':
                     # flip and negate imag and real
                     # dir = (-dy, -dx))
                     # (dx, dy) -> (-dy, -dx)
                     #dir = -complex(dir.imag, dir.real)
-                    dir = -1j / dir
+                    bdir = -1j / bdir
                 case '\\':
                     # flip dx and dy
                     # dir = (dy, dx)
                     # dir = complex(dir.imag, dir.real)
-                    dir = 1j/dir
+                    bdir = 1j / bdir
                 case None:
                     break
                 # left off case '.' do nothing
@@ -228,12 +229,16 @@ def traverse_complex(complex_map, todo):
     return len(set(pos for pos, _ in done)) - 1
 
 def load_complex_map(file_name):
+    """Returns a 2d map indexed by complex numbers (x, y) -> (r, i)"""
     with open(file_name, 'r', encoding='utf-8') as file:
         # returns a dictionary indexed by i,j with c as the value
-        return {complex(i,j): c for j, r in enumerate(file) 
+        return {complex(i,j): c for j, r in enumerate(file)
                                 for i, c in enumerate(r.strip())}
 
 def maximum_beam_complex(filename):
+    """Returns the maximum number of energized tiles from any starting location
+        uses the complex number variant
+    """
     c_map = load_complex_map(filename)
     starts = (
         [(pos-dir, dir)] for dir in (1,1j,-1,-1j)
