@@ -38,76 +38,63 @@ class TestAOC(unittest.TestCase):
         self.assertEqual(test_function('input.txt', 1000000), 0)
 
 
-def test_function(filename, *args):
-    """Loads sample data and calculates answer...
-    """
-    stuff = load_file(filename)
-    return len(stuff) * args[0]
-
-
 # beam is (y, x)
 # map is (char, energized)
 # start at 0, 0, going E  == (0, 0, 'E)'
 # save states
 # stop when hit cycle
-
 def is_marked(grid, beam):
+    """Return True if this position was visited previously"""
     return grid[beam[0]][beam[1]][1] == '#'
 
 def is_valid(grid, y, x):
+    """Returns true if this position is on the map."""
     if 0 <= y < len(grid) and 0 <= x < len(grid[0]):
         return True
 
     return False
 
-# moves to next lasewr location
-BEAMS = set()
+VISITED = set()   # keep track of where we have traversed
 def shoot_laser(grid, beam):
+    """Returns the number of energized cells while traversing the map
+
+        grid is the map
+        beam is (x, y, dx, dy) location and direction of the beam
+    """
     y, x, dy, dx = beam
 
-    # goes off edge of board or alreadly traversed
-    if not is_valid(grid, y, x) or beam in BEAMS:
+    # goes off edge of board or alreadly traversed this way
+    if not is_valid(grid, y, x) or beam in VISITED:
         return 0
 
     # mark this path as traversed
-    BEAMS.add(beam)
+    # I could use this to count the number of placed traversed!
+    # See below in main()
+    VISITED.add(beam)
 
     # Score when we mark it
     score = 0 if grid[y][x][1] == '#' else 1
     grid[beam[0]][beam[1]][1] = '#'
-
     # print(f'\t{beam} : {grid[y][x]}) {score}')
 
-    grid_op = grid[beam[0]][beam[1]][0]
-    if grid_op == '\\':
-        score += shoot_laser(grid, (y+dx, x+dy, dx, dy))
-    elif grid_op == '/':
-        score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy))
-    elif grid_op == '-' and dy:
-        score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy)) + \
-                 shoot_laser(grid, (y+dx, x+dy, dx, dy))
-    elif grid_op == '|' and dx:
-        score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy)) + \
-                 shoot_laser(grid, (y+dx, x+dy, dx, dy))
-    else:
-        y, x = y+dy, x+dx
-        while is_valid(grid, y, x) and grid[y][x][0] == '.':
-            # Score when we mark it
-            score += 0 if grid[y][x][1] == '#' else 1
-            grid[y][x][1] = '#'
-            #print(f'\t {y}, {x}, {dy}, {dx}  : {grid[y][x]} {score}')
-            y, x = y+dy, x+dx
-
-        score += shoot_laser(grid, (y, x, dy, dx))
+    match grid[beam[0]][beam[1]][0]:    # whats in that spot?
+        case '\\':
+            score += shoot_laser(grid, (y+dx, x+dy, dx, dy))
+        case '/':
+            score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy))
+        case '-':
+            # this might "bounce back" when we approach from the pointy end
+            # but, that path will end when we see it's already been traversed
+            score += shoot_laser(grid, (y, x-1, 0, -1)) + \
+                    shoot_laser(grid, (y, x+1, 0,  1))
+        case '|':
+            # same bounce back as above
+            score += shoot_laser(grid, (y-1, x, -1, 0)) + \
+                    shoot_laser(grid, (y+1, x,  1, 0))
+        case _:
+            score += shoot_laser(grid, (y+dy, x+dx, dy, dx))
 
     return score
-
-def grid_value(grid):
-    sum = 0
-    for r in grid:
-        for c in r:
-            sum += 1 if c[1] == '#' else 0
-    return sum
 
 def print_grid(grid):
     """Pretty print 2D grid in readable form"""
@@ -115,12 +102,6 @@ def print_grid(grid):
         for col in row:
             print(f'{col[0]}{col[1]}', end=' ')
         print()
-
-def clear_marks(grid):
-    """Pretty print 2D grid in readable form"""
-    for y in range(len(grid)):
-        for x in range(len(grid[0])):
-            grid[y][x][1] = '.'
 
 def print_marks(grid):
     """Pretty print 2D grid in readable form"""
@@ -155,6 +136,60 @@ def load_file(filename: str):
 
     return []
 
+#
+# This is an alternate solution from reddit user 4HbQ in the 
+# solutions thread. The key learning from this is the ability 
+# to use complex numbers for this type of navigation
+# 
+# 1. (x, y) -> complex(x, y).  1 -> (1, 0), 1j -> (0, 1)
+# 2. You can do math if you also have direction as an imaginary
+#    number... and transforms (turns, etc)
+# 3. create the map as a dictionary keyed by imaginary numbers
+#    then indexing is easy as well tiles[pos]
+# 4. use tiles.get(pos) which will return None if pos is not in the map.
+#
+def traverse_complex(complex_map, todo):
+    done = set()    # keep track of where we have been
+    while todo:     # process each item in list
+        pos, dir = todo.pop()
+        while not (pos, dir) in done:
+            done.add((pos, dir))    # don't re-traverse in same direction
+            pos += dir              # move to next
+            match complex_map.get(pos):
+                case '|':
+                    # go south, add todo to go north
+                    dir = complex(0, 1) # 1j,  currenet path
+                    # split path, track this down later
+                    todo.append((pos, -dir))
+                case '-':
+                    # go west, add todo to go east
+                    dir = complex(-1, 0) # -1, current path
+                    # split path, track this down later
+                    todo.append((pos, -dir))
+                case '/':
+                    # flip and negate imag and real
+                    # dir = (-dy, -dx))
+                    # (dx, dy) -> (-dy, -dx)
+                    #dir = -complex(dir.imag, dir.real)
+                    dir = -1j / dir
+                case '\\':
+                    # flip dx and dy
+                    # dir = (dy, dx)
+                    # dir = complex(dir.imag, dir.real)
+                    dir = 1j/dir
+                case None:
+                    break
+                # left off case '.' do nothing
+
+    return len(set(pos for pos, _ in done)) - 1
+
+def load_complex_map(file_name):
+    with open(file_name, 'r', encoding='utf-8') as file:
+        # returns a dictionary indexed by i,j with c as the value
+        return {complex(i,j): c for j, r in enumerate(file) 
+                                for i, c in enumerate(r.strip())}
+
+
 def main():
     """Main Routine, does all the work"""
     parser = argparse.ArgumentParser()
@@ -169,9 +204,11 @@ def main():
         # Part One
         #
         #print_grid(floor_map)
-        BEAMS.clear()
+        VISITED.clear()
         energized = shoot_laser(copy.deepcopy(floor_map), (0, 0, 0, 1))
         # print_marks(floor_map)
+        #return len(set(pos for pos, _ in done)) - 1
+        print(len(set((x,y) for x, y, _, _ in VISITED )))
         print(f'\t1. Energized tiles: {energized}')
 
         #
@@ -181,18 +218,27 @@ def main():
         max_x = len(floor_map[0])
         energized = []
         for y in range(max_y):
-            BEAMS.clear()
+            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (y, 0, 0, 1)))
-            BEAMS.clear()
+            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (y, max_x, 0, -1)))
         for x in range(max_x):
-            BEAMS.clear()
+            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (0, x, 1, 0)))
-            BEAMS.clear()
+            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (max_y, x, -1, 0)))
 
         # print(energized)
         print(f'\t1. Max Energized tiles: {max(energized)}')
+
+
+        print()
+        c_map = load_complex_map(filename)
+        # start off the map on row 0 heading east
+        # start pos = (-1, 0) (x, y), start direction = (1, 0) (dx, dy)
+        energized = traverse_complex(c_map, [[complex(-1,0), complex(1,0)]])
+        print(f'\t1. Energized tiles: {energized}')
+
 
         print()
 
