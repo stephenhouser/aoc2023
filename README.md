@@ -32,3 +32,4 @@ Contains my solutions to the [Advent of Code 2023](https://adventofcode.com/2023
 - [Day 13: Point of Incidence](https://adventofcode.com/2023/day/13) -- [solution](./Day-13)
 - [Day 14: Parabolic Reflector Dish](https://adventofcode.com/2023/day/14) -- [solution](./Day-14)
 - [Day 15: Lens Library](https://adventofcode.com/2023/day/15) -- [solution](./Day-15)
+- [Day 16: The Floor Will Be Lava](https://adventofcode.com/2023/day/16) -- [solution](./Day-16)

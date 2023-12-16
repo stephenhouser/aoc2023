@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day X: ...
+Advent of Code 2023 - Day 16: The Floor Will Be Lava
 Stephen Houser <stephenhouser@gmail.com>
 """
 
-import re
 import copy
 import argparse
 import unittest
-import logging as log
-log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO)
 
+# increase recursion limit, default is 1,000
+import sys
+print(sys.getrecursionlimit())
+sys.setrecursionlimit(5_000)
 
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
@@ -54,23 +55,26 @@ def is_valid(grid, y, x):
 
     return False
 
-VISITED = set()   # keep track of where we have traversed
-def shoot_laser(grid, beam):
+# VISITED = set()   # keep track of where we have traversed
+def shoot_laser(grid, beam, visited=None):
     """Returns the number of energized cells while traversing the map
 
         grid is the map
         beam is (x, y, dx, dy) location and direction of the beam
     """
+    if visited is None:
+        visited = set()
+
     y, x, dy, dx = beam
 
     # goes off edge of board or alreadly traversed this way
-    if not is_valid(grid, y, x) or beam in VISITED:
+    if not is_valid(grid, y, x) or beam in visited:
         return 0
 
     # mark this path as traversed
     # I could use this to count the number of placed traversed!
     # See below in main()
-    VISITED.add(beam)
+    visited.add(beam)
 
     # Score when we mark it
     score = 0 if grid[y][x][1] == '#' else 1
@@ -79,20 +83,20 @@ def shoot_laser(grid, beam):
 
     match grid[beam[0]][beam[1]][0]:    # whats in that spot?
         case '\\':
-            score += shoot_laser(grid, (y+dx, x+dy, dx, dy))
+            score += shoot_laser(grid, (y+dx, x+dy, dx, dy), visited)
         case '/':
-            score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy))
+            score += shoot_laser(grid, (y-dx, x-dy, -dx, -dy), visited)
         case '-':
             # this might "bounce back" when we approach from the pointy end
             # but, that path will end when we see it's already been traversed
-            score += shoot_laser(grid, (y, x-1, 0, -1)) + \
-                    shoot_laser(grid, (y, x+1, 0,  1))
+            score += shoot_laser(grid, (y, x-1, 0, -1), visited) + \
+                    shoot_laser(grid, (y, x+1, 0,  1), visited)
         case '|':
             # same bounce back as above
-            score += shoot_laser(grid, (y-1, x, -1, 0)) + \
-                    shoot_laser(grid, (y+1, x,  1, 0))
+            score += shoot_laser(grid, (y-1, x, -1, 0), visited) + \
+                    shoot_laser(grid, (y+1, x,  1, 0), visited)
         case _:
-            score += shoot_laser(grid, (y+dy, x+dx, dy, dx))
+            score += shoot_laser(grid, (y+dy, x+dx, dy, dx), visited)
 
     return score
 
@@ -132,7 +136,7 @@ def load_file(filename: str):
             #return list(map(Thing, file.readlines()))
 
     except FileNotFoundError:
-        log.error('File %s not found.', filename)
+        print('File %s not found.', filename)
 
     return []
 
@@ -189,7 +193,6 @@ def load_complex_map(file_name):
         return {complex(i,j): c for j, r in enumerate(file) 
                                 for i, c in enumerate(r.strip())}
 
-
 def main():
     """Main Routine, does all the work"""
     parser = argparse.ArgumentParser()
@@ -203,12 +206,10 @@ def main():
         #
         # Part One
         #
-        #print_grid(floor_map)
-        VISITED.clear()
-        energized = shoot_laser(copy.deepcopy(floor_map), (0, 0, 0, 1))
-        # print_marks(floor_map)
-        #return len(set(pos for pos, _ in done)) - 1
-        print(len(set((x,y) for x, y, _, _ in VISITED )))
+        visited = set()
+        energized = shoot_laser(copy.deepcopy(floor_map), (0, 0, 0, 1), visited)
+        # print unique nodes that were visited, ignore direction
+        print(len(set((x,y) for x, y, _, _ in visited)))
         print(f'\t1. Energized tiles: {energized}')
 
         #
@@ -218,14 +219,10 @@ def main():
         max_x = len(floor_map[0])
         energized = []
         for y in range(max_y):
-            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (y, 0, 0, 1)))
-            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (y, max_x, 0, -1)))
         for x in range(max_x):
-            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (0, x, 1, 0)))
-            VISITED.clear()
             energized.append(shoot_laser(copy.deepcopy(floor_map), (max_y, x, -1, 0)))
 
         # print(energized)
