@@ -76,8 +76,13 @@ def load_file(filename: str):
         with open(filename, 'r', encoding='utf-8') as file:
             # read a grid of text into 2D grid
             return list(map(list,map(str.strip, file.readlines())))
+
             # read a list of Thing
             #return list(map(Thing, file.readlines()))
+
+            # returns a dictionary indexed by i,j with c as the value
+            # return {complex(i,j): c for j, r in enumerate(file)
+            #                     for i, c in enumerate(r.strip())}
 
     except FileNotFoundError:
         print('File %s not found.', filename)
