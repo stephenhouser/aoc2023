@@ -10,7 +10,6 @@ import unittest
 
 # increase recursion limit, default is 1,000
 import sys
-print(sys.getrecursionlimit())
 sys.setrecursionlimit(5_000)
 
 class TestAOC(unittest.TestCase):
@@ -21,23 +20,41 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 2), 0)
+        floor_map = load_file('test.txt')
+        energized = shoot_laser(floor_map, (0, 0, 0, 1))
+        self.assertEqual(energized, 46)
 
     def test_part1_solution(self):
         """Live data for part 1 data from input.txt"""
-        self.assertEqual(test_function('input.txt', 200), 0)
+        floor_map = load_file('input.txt')
+        energized = shoot_laser(floor_map, (0, 0, 0, 1))
+        self.assertEqual(energized, 7496)
+
+    def test_part1_complex(self):
+        """Live data for part 1 data from input.txt"""
+        floor_map = load_complex_map('input.txt')
+        energized = traverse_complex(floor_map, [(-1, 1)])
+        self.assertEqual(energized, 7496)
 
     #
     # Part Two
     #
     def test_part2_example(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 10), 0)
+        floor_map = load_file('test.txt')
+        max_value = maximum_beam(floor_map)
+        self.assertEqual(max_value, 51)
 
     def test_part2_solution(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('input.txt', 1000000), 0)
+        floor_map = load_file('input.txt')
+        max_value = maximum_beam(floor_map)
+        self.assertEqual(max_value, 7932)
 
+    def test_part2_complex(self):
+        """Test example 1 data from test.txt"""
+        energized = maximum_beam_complex('input.txt')
+        self.assertEqual(energized, 7932)
 
 # beam is (y, x)
 # map is (char, energized)
@@ -99,6 +116,29 @@ def shoot_laser(grid, beam, visited=None):
             score += shoot_laser(grid, (y+dy, x+dx, dy, dx), visited)
 
     return score
+
+def starting_beams(grid):
+    """Return list of all starting locations and directions"""
+    s_beams = []        
+    max_y = len(grid)
+    max_x = len(grid[0])
+    for y in range(max_y):
+        s_beams.append((y, 0, 0, 1))
+        s_beams.append((y, max_x, 0, -1))
+
+    for x in range(max_x):
+        s_beams.append((0, x, 1, 0))
+        s_beams.append((max_y, x, -1, 0))
+
+    return s_beams
+
+def maximum_beam(grid):
+    energized = []
+    for beam in starting_beams(grid):
+        energized.append(shoot_laser(copy.deepcopy(grid), beam))
+
+    return max(energized)
+
 
 def print_grid(grid):
     """Pretty print 2D grid in readable form"""
@@ -193,6 +233,18 @@ def load_complex_map(file_name):
         return {complex(i,j): c for j, r in enumerate(file) 
                                 for i, c in enumerate(r.strip())}
 
+def maximum_beam_complex(filename):
+    c_map = load_complex_map(filename)
+    starts = (
+        [(pos-dir, dir)] for dir in (1,1j,-1,-1j)
+                             for pos in c_map if pos-dir not in c_map
+        )
+    energized = []
+    for start in starts:
+        energized.append(traverse_complex(c_map, start))
+
+    return max(energized)
+
 def main():
     """Main Routine, does all the work"""
     parser = argparse.ArgumentParser()
@@ -209,34 +261,19 @@ def main():
         visited = set()
         energized = shoot_laser(copy.deepcopy(floor_map), (0, 0, 0, 1), visited)
         # print unique nodes that were visited, ignore direction
-        print(len(set((x,y) for x, y, _, _ in visited)))
-        print(f'\t1. Energized tiles: {energized}')
+        print(f'\t1. Energized tiles (def): {energized}')
+
+        energized = len(set((x,y) for x, y, _, _ in visited))
+        print(f'\t1. Energized tiles (alt): {energized}')
 
         #
         # Part Two
         #
-        max_y = len(floor_map)
-        max_x = len(floor_map[0])
-        energized = []
-        for y in range(max_y):
-            energized.append(shoot_laser(copy.deepcopy(floor_map), (y, 0, 0, 1)))
-            energized.append(shoot_laser(copy.deepcopy(floor_map), (y, max_x, 0, -1)))
-        for x in range(max_x):
-            energized.append(shoot_laser(copy.deepcopy(floor_map), (0, x, 1, 0)))
-            energized.append(shoot_laser(copy.deepcopy(floor_map), (max_y, x, -1, 0)))
+        max_value = maximum_beam(floor_map)
+        print(f'\t1. Max Energized tiles: {max_value}')
 
-        # print(energized)
-        print(f'\t1. Max Energized tiles: {max(energized)}')
-
-
-        print()
-        c_map = load_complex_map(filename)
-        # start off the map on row 0 heading east
-        # start pos = (-1, 0) (x, y), start direction = (1, 0) (dx, dy)
-        energized = traverse_complex(c_map, [[complex(-1,0), complex(1,0)]])
-        print(f'\t1. Energized tiles: {energized}')
-
-
+        max_value = maximum_beam_complex(filename)
+        print(f'\t1. Max Energized tiles (complex): {max_value}')
         print()
 
 if __name__ == '__main__':
