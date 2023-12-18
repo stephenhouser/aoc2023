@@ -91,3 +91,8 @@ After 3 cycles:
 ```
 
 Example answer: _64_
+
+
+## NOTES:
+
+A few examples here of playing around with C and C++
