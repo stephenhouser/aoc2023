@@ -59,8 +59,8 @@ def load_file(filename: str):
 
 def print_grid(grid, path=None):
     """Pretty print 2D grid in readable form"""
-    rows = set([int(n.imag) for n in grid])
-    cols = set([int(n.real) for n in grid])
+    rows = ([int(n.imag) for n in grid])    # set comprehension R1718
+    cols = ([int(n.real) for n in grid])
 
     print('  :', end='')
     _ = [print(f'{x:2}', end='') for x in cols] # header
@@ -82,8 +82,11 @@ def c_str(cplx):
 
 class ComplexPriQueue(PriorityQueue):
     """Priority Queue that wraps the items and uses explicit priority"""
+
     @dataclass(order=True)
     class PrioritizedItem:
+        """Prioritized Item to use explicit priority"""
+
         priority: int
         item: Any=field(compare=False)
 
@@ -167,8 +170,11 @@ def find_path(grid, start, goal, min_length, max_length):
     return -1
 
 def crucible_path(city, min_length=1, max_length=3):
-    rows = set([int(n.imag) for n in city])
-    cols = set([int(n.real) for n in city])
+    """Return the lowest cost path, starting at (0,0) and ending at the
+        end of the grid.
+    """
+    rows = ([int(n.imag) for n in city])    # set comprehension R1718
+    cols = ([int(n.real) for n in city])
 
     start = complex(0, 0)
     goal = complex(max(cols), max(rows))
