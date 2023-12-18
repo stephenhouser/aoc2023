@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day X: ...
+Advent of Code 2023 - Day 17: Clumsy Crucible
 Stephen Houser <stephenhouser@gmail.com>
 """
 
-import re
 import argparse
 import unittest
 from queue import PriorityQueue
@@ -19,32 +18,35 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 2), 0)
+        city = load_file('test.txt')
+        self.assertEqual(crucible_path(city, 1, 3), 102)
 
     def test_part1_solution(self):
         """Live data for part 1 data from input.txt"""
-        self.assertEqual(test_function('input.txt', 200), 0)
+        city = load_file('input.txt')
+        self.assertEqual(crucible_path(city, 1, 3), 843)
 
     #
     # Part Two
     #
-    def test_part2_example(self):
+    def test_part2_example1(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 10), 0)
+        city = load_file('test.txt')
+        self.assertEqual(crucible_path(city, 4, 10), 94)
+
+    def test_part2_example2(self):
+        """Test example 1 data from test.txt"""
+        city = load_file('test-2.txt')
+        self.assertEqual(crucible_path(city, 4, 10), 71)
 
     def test_part2_solution(self):
         """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('input.txt', 1000000), 0)
+        city = load_file('input.txt')
+        self.assertEqual(crucible_path(city, 4, 10), 1017)
 
-
-def test_function(filename, *args):
-    """Loads sample data and calculates answer...
-    """
-    stuff = load_file(filename)
-    return len(stuff) * args[0]
 
 def load_file(filename: str):
-    """Load lines from file into ___"""
+    """Load lines from file into dictionary keyed by complex(x,y)"""
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             # returns a dictionary indexed by i,j with c as the value
@@ -63,149 +65,115 @@ def print_grid(grid, path=None):
     print('  :', end='')
     _ = [print(f'{x:2}', end='') for x in cols] # header
     print('\n  :', end='')
-    _ = [print(f'--', end='') for x in cols] # header
+    _ = [print('--', end='') for x in cols] # header
     for y in rows:
         print(f'\n{y:2}:', end='')
         for x in cols:
             if path and complex(x, y) in path:
-                print(f' #', end='')
+                print(' #', end='')
             else:
                 print(f'{grid.get(complex(x, y)):2}', end='')
 
     print()
 
 def c_str(cplx):
+    """Pretty print a complex number as (i,j)"""
     return f'({int(cplx.real)}, {int(cplx.imag)})'
 
-
 class ComplexPriQueue(PriorityQueue):
+    """Priority Queue that wraps the items and uses explicit priority"""
     @dataclass(order=True)
     class PrioritizedItem:
         priority: int
         item: Any=field(compare=False)
 
     def get(self):
+        """Return the priority and item contents"""
         inner = super().get()
-        return inner.item, inner.priority
+        return inner.priority, inner.item[0], inner.item[1], inner.item[2]
 
-    def put(self, item, priority):
-        inner = ComplexPriQueue.PrioritizedItem(priority, item)
+    def put(self, cost, pos, direction, steps):
+        """Add item with priority"""
+        inner = ComplexPriQueue.PrioritizedItem(cost, (pos, direction, steps))
         super().put(inner)
 
     def show_queue(self):
+        """Print the items in the queue -- This is broken"""
         d = self.queue
         for entry in d:
             item = entry.item
             print(f'{entry.priority}:{item[1]}, pos={c_str(item[2])}, dir={c_str(item[3])}')
 
+def find_path(grid, start, goal, min_length, max_length):
+    """Returns the cost of the path with the lowest cost through the grid.
+        starts at start, ends at goal, will force to take steps that
+        are at least min_length and at most max_length long
+    """
+    #
+    # A seriously hacked Dijkstra algorithm.
+    #
+    # Lots of help from:
+    #   https://www.redblobgames.com/pathfinding/a-star/introduction.html
+    #
+    # Dijkstra (nor A*) does not handle the max segment length or min segment
+    # length that the problem calls for. So, I store a bit more in the
+    # `tentative` and `confirmed` lists than those algorithms would.
+    #
 
-def get_neighbors(grid, current, neighbor_count=3):
-    neighbors = []
-    for n in range(1, neighbor_count+1):
-        for direction in (-1, 1, -1j, 1j):
-            neighbor = current + (direction * n)
-            if grid.get(neighbor):
-                neighbors.append(neighbor)
+    #print(f'start={c_str(start)}')
+    #print(f'goal={c_str(goal)}')
 
-    return neighbors
+    tenatative = ComplexPriQueue()  # nodes to consider
+    confirmed = set()               # nodes we visited already
 
-def find_path_dj(grid):
-    rows = set([int(n.imag) for n in grid])
-    cols = set([int(n.real) for n in grid])
+    # put our immediate neighbors on the tentative list, and the direction
+    for direction in (complex(0,1), complex(1,0)):
+        current = start + direction
+        tenatative.put(grid.get(current), current, direction, 0)
 
-    start = complex(0, 0)
-    goal = complex(max(cols), max(rows))
+    while not tenatative.empty():
+        # Take lowest cost entry from tentative list
+        cost, current, direction, steps = tenatative.get()
 
-    print(f'start={c_str(start)}')
-    print(f'goal={c_str(goal)}')
-
-    open_l = ComplexPriQueue()  # nodes to consider
-
-    # closed list and reached is set of keys
-    parents = dict()
-    costs = dict()
-
-    open_l.put(complex(0, 0), 0)
-    parents[start] = None
-    costs[start] = 0
-
-    visited = set()
-
-    while not open_l.empty():
-        current, direction = open_l.get()
-
-        print(f'Eval: {c_str(current)} cost={costs[current]}')
-
-        if current == goal:
-            break
-
-        if (current, direction) in visited:
-            continue
-
-        visited.add((current, direction))
-
-        for neighbor in get_neighbors(grid, current):
-            neighbor_cost = costs[current] + grid.get(neighbor)
-            if neighbor not in costs or neighbor_cost < costs[neighbor]:
-                print(f'\tAdd: {c_str(neighbor)} @{grid.get(neighbor)} = {neighbor_cost}')
-                costs[neighbor] = neighbor_cost
-                open_l.put(neighbor, neighbor_cost)
-                parents[neighbor] = current
-            else:
-                print(f'\tSki: {c_str(neighbor)}={neighbor_cost}')
-
-    # print the path
-    current = goal
-    path = []
-    while current != start:
-        path.append(current)
-        current = parents[current]
-    path.append(start)
-    path.reverse()
-
-    print_grid(grid, path)
-
-
-
-def find_path(grid):
-    rows = set([int(n.imag) for n in grid])
-    cols = set([int(n.real) for n in grid])
-
-    start = complex(0, 0)
-    goal = complex(max(cols), max(rows))
-
-    print(f'start={c_str(start)}')
-    print(f'goal={c_str(goal)}')
-
-    search_counter = 0
-    open_l = ComplexPriQueue()  # nodes to consider
-    open_l.put((0, search_counter, complex(0, 0), complex(1, 0)))
-    open_l.put((0, search_counter, complex(0, 0), complex(0, 1)))
-
-    closed_l = set()            # visited nodes
-
-    while not open_l.empty():
-        cost, _, pos, dir = open_l.get()
-
-        if pos == goal:
+        # check if it's the goal
+        if current == goal and steps >= (min_length - 1):
             return cost
-        
-        if (pos, dir) in closed_l:
-            continue
 
-        left = complex(0, 1) / dir
-        right = -complex(0, 1) / dir
-        for cast in (left, right):
-            for length in range(1, 3):  # look out 1 to 3 steps
-                check_pos = pos + (dir * length)
-                if grid.get(check_pos): # is it on the map?
-                                        # cost is sum of all costs along the way                    
-                    check_cost = cost + sum()
+        # check it's not already on confirmed list
+        if (current, direction, steps) not in confirmed:
+            # Add node to confirmed list
+            confirmed.add((current, direction, steps))
+            #print(f'Confirm {c_str(current)}->{c_str(direction)} cost={cost}')
 
+            # Add neighbors to the tentative list
 
-    open_l.show_queue()
-    return 0
+            # going straight as long as we don't run out of steps
+            next_pos = current + direction
+            if grid.get(next_pos) and (max_length - 1) > steps:
+                next_cost = cost + grid.get(next_pos)
+                tenatative.put(next_cost, next_pos, direction, steps+1)
+                #print(f'\tadd: {c_str(current+direction)}->{c_str(direction)} cost={n_cost}')
 
+            # going left and right if we have gone the minimum number of steps
+            if steps >= (min_length - 1):
+                for next_dir in (-1j/direction, 1j/direction):
+                    next_pos  = current + next_dir
+                    if grid.get(next_pos):
+                        next_cost = cost + grid.get(next_pos)
+                        tenatative.put(next_cost, next_pos, next_dir, 0)
+                        #print(f'\tadd: {c_str(next_pos)}->{c_str(next_dir)} cost={next_cost}')
+
+    # should not get here
+    return -1
+
+def crucible_path(city, min_length=1, max_length=3):
+    rows = set([int(n.imag) for n in city])
+    cols = set([int(n.real) for n in city])
+
+    start = complex(0, 0)
+    goal = complex(max(cols), max(rows))
+
+    return find_path(city, start, goal, min_length, max_length)
 
 def main():
     """Main Routine, does all the work"""
@@ -220,12 +188,15 @@ def main():
         #
         # Part One
         #
-        print_grid(city)
-        ans = find_path_dj(city)
+        #print_grid(city)
+        path_cost = crucible_path(city, 1, 3)
+        print(f'\t1. The minimum heat loss (regular crucible): {path_cost}')
 
         #
         # Part Two
         #
+        path_cost = crucible_path(city, 4, 10)
+        print(f'\t2. The minimum heat loss (ultra crucible)  : {path_cost}')
 
         print()
 
