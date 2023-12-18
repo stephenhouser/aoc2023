@@ -7,6 +7,7 @@ Stephen Houser <stephenhouser@gmail.com>
 import re
 import argparse
 import unittest
+from cProfile import Profile
 
 
 class TestAOC(unittest.TestCase):
@@ -15,36 +16,83 @@ class TestAOC(unittest.TestCase):
     #
     # Part One
     #
-    def test_part1_example(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(dig_lagoon(load_file('test.txt')), 62)
+    def test_part1_example_flood(self):
+        """Example solution for part 1, test.txt"""
+        self.assertEqual(lagoon_volume_flood(load_file('test.txt')), 62)
 
-    def test_part1_solution(self):
-        """Live data for part 1 data from input.txt"""
-        self.assertEqual(dig_lagoon(load_file('input.txt')), 61661)
+    def test_part1_example_shoelace(self):
+        """Example solution for part 1, test.txt"""
+        self.assertEqual(lagoon_volume_shoelace(load_file('test.txt')), 62)
+
+    def test_part1_solution_flood(self):
+        """Solution for part 2, input.txt"""
+        self.assertEqual(lagoon_volume_flood(load_file('input.txt')), 61661)
+
+    def test_part1_solution_shoelace(self):
+        """Solution for part 2, input.txt"""
+        self.assertEqual(lagoon_volume_shoelace(load_file('input.txt')), 61661)
 
     #
     # Part Two
     #
-    # def test_part2_example(self):
-    #     """Test example 1 data from test.txt"""
-    #     self.assertEqual(test_function('test.txt', 10), 0)
+    def test_part2_example(self):
+        """Example solution for part 2, test.txt"""
+        volume = lagoon_volume_shoelace(load_file('test.txt', parse_instruction2))
+        self.assertEqual(volume, 952408144115)
 
-    # def test_part2_solution(self):
-    #     """Test example 1 data from test.txt"""
-    #     self.assertEqual(test_function('input.txt', 1000000), 0)
+    def test_part2_solution(self):
+        """Solution for part 2, input.txt"""
+        volume = lagoon_volume_shoelace(load_file('input.txt', parse_instruction2))
+        self.assertEqual(volume, 111131796939729)
 
-def load_file(filename: str):
+def parse_instruction1(text):
+    """Return a parsed instruction"""
+    directions = {'U': complex(0, -1), 'D': complex(0, 1),
+                  'L': complex(-1, 0), 'R': complex(1, 0)}
+
+    direction_code, length, color_code = text.split()
+
+    direction = directions[direction_code]
+    length = int(length)
+    color = re.findall(r'[0-9A-Za-z]+', color_code)[0]
+    return (direction, length, color)
+
+def parse_instruction2(text):
+    """Return a parsed instruction"""
+    directions = {'3': complex(0, -1), '1': complex(0, 1),
+                  '2': complex(-1, 0), '0': complex(1, 0)}
+
+    _, _, instruction_code = text.split()
+    match = re.match(r'\(#([0-9A-Za-z]{5})([0-9A-Za-z]{1})\)', instruction_code)
+    length = int(match.group(1), 16)
+    direction = directions[match.group(2)]
+
+    return (direction, length, 'AceAce')
+
+def load_file(filename: str, parser=parse_instruction1):
     """Load lines from file into ___"""
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             # read a list of Directons
-            return list(map(parse_instruction, file.readlines()))
+            return list(map(parser, file.readlines()))
 
     except FileNotFoundError:
         print('File %s not found.', filename)
 
     return []
+#
+# Grid and complex number printing
+#
+def get_grid_size(grid):
+    """Return the min and max coordinates of the grid"""
+    min_x = min(x.real for x in grid)
+    max_x = max(x.real for x in grid)
+
+    min_y = min(y.imag for y in grid)
+    max_y = max(y.imag for y in grid)
+
+    #print(f'min={min_x}, {min_y}, max={max_x}, {max_y}')
+    return complex(min_x, min_y), complex(max_x, max_y)
 
 def ascii_color(hex_color, text):
     """Return text in ASCII color"""
@@ -89,37 +137,19 @@ def c_str(cplx):
     """Pretty print a complex number as (i,j)"""
     return f'({int(cplx.real)}, {int(cplx.imag)})'
 
-def get_grid_size(grid):
-    """Return the min and max coordinates of the grid"""
-    min_x = min(x.real for x in grid)
-    max_x = max(x.real for x in grid)
+#
+# Flood fill version - works o.k. for part 1, but too long!
+#
+# - Digs trench in complex() grid
+# - Uses flood fill to fill interior
+# - Counts number of filled locations
+#
+def lagoon_volume_flood(instructions):
+    """Retur volume of lagoon using flood fill"""
+    lagoon = dig_trench(instructions)
 
-    min_y = min(y.imag for y in grid)
-    max_y = max(y.imag for y in grid)
-
-    #print(f'min={min_x}, {min_y}, max={max_x}, {max_y}')
-    return complex(min_x, min_y), complex(max_x, max_y)
-
-def on_grid(grid, position):
-    """Return True if position on on the grid"""
-    mins, maxs = get_grid_size(grid)
-
-    return mins.real <= position.real <= maxs.real+1 and \
-            mins.imag <= position.imag <= maxs.imag+1
-
-
-def parse_instruction(text):
-    """Return a parsed instruction"""
-    directions = {'U': complex(0, -1), 'D': complex(0, 1),
-                  'L': complex(-1, 0), 'R': complex(1, 0)}
-
-    direction_code, length, color_code = text.split()
-
-    direction = directions[direction_code]
-    length = int(length)
-    # color = int(re.findall(r'[0-9A-Za-z]+', color_code)[0], 16)
-    color = re.findall(r'[0-9A-Za-z]+', color_code)[0]
-    return (direction, length, color)
+    flood_fill(lagoon, instructions)
+    return len(lagoon)  # count the active locations
 
 def dig_trench(instructions):
     """Perform one trench digging instruction"""
@@ -132,6 +162,13 @@ def dig_trench(instructions):
             steps -= 1
 
     return trench
+
+def on_grid(grid, position):
+    """Return True if position on on the grid"""
+    mins, maxs = get_grid_size(grid)
+
+    return mins.real <= position.real <= maxs.real+1 and \
+            mins.imag <= position.imag <= maxs.imag+1
 
 def flood_fill_one(grid, position, fill_color):
     """Flood fill the grid with fill_color starting at position"""
@@ -174,17 +211,36 @@ def flood_fill(grid, instructions):
 
     return position
 
+#
+# Shoelace version -- the better version
+#
+# - Does not do any digging!
+# - Collects the list of verticies and the permiter distance
+# - Uses shoelace algorithm to compute area
+# - add to that 1/2 the permiter to get actual area (# are not zero size!)
+#
+def lagoon_volume_shoelace(instructions):
+    """Return the number of filled grid locations"""            
+    #lagoon = dig_trench(instructions)
+    verticies, distance = lagoon_verticies(instructions)
+    perimeter = distance // 2 + 1    # count sides as 1/2
+    interior = shoelace(verticies)
+    return interior + perimeter
 
 def lagoon_verticies(instructions):
-    """Return list of verticies generated in following instructions"""
+    """Return list of verticies generated in following instructions 
+        and the distance travelled (perimiter of polygon).
+    """
     position = complex(0, 0)
     points = []
-    for direction, steps, color in instructions:
+    distance = 0
+    for direction, steps, _ in instructions:
         position += direction * steps
+        distance += steps
         points.append(position)
         #print(f'vertex: {c_str(position)}')
 
-    return points
+    return points, distance
 
 # Calculate value of shoelace formula
 def shoelace(verticies):
@@ -198,22 +254,6 @@ def shoelace(verticies):
         area += x[i+1]*(y[i+2]-y[i]) + y[i+1]*(x[i]-x[i+2])
 
     return int(abs(area) / 2)
-
-
-def lagoon_volume_flood(instructions):
-    """Retur volume of lagoon using flood fill"""
-    lagoon = dig_trench(instructions)
-
-    flood_fill(lagoon, instructions)
-    return len(lagoon)  # count the active locations
-
-def lagoon_volume_shoelace(instructions, parser=None):
-    """Return the number of filled grid locations"""            
-    lagoon = dig_trench(instructions)
-
-    perimeter = len(lagoon) // 2 + 1    # count sides as 1/2
-    interior = shoelace(lagoon_verticies(instructions))
-    return interior + perimeter
 
 # 61661 -- CORRECT (Excel)
 # 60093 not right
@@ -229,24 +269,31 @@ def main():
 
     for filename in args.filename:
         print(filename)
-        instructions = load_file(filename)
 
-        #
-        # Part One
-        #
+        with Profile() as profile:
+            #
+            # Part One
+            #
 
-        # flood fill version
-        # volume = lagoon_volume_flood(instructions)
-        # print(f'\t1. Flood fill volume: {volume}')
+            # flood fill version
+            instructions = load_file(filename)
+            volume = lagoon_volume_flood(instructions)
+            print(f'\t1. Lagoon volume (flood)   : {volume}')
 
-        volume = lagoon_volume_shoelace(instructions)
-        print(f'\t1. Lagoon: {volume}')
+            # shoelace version
+            instructions = load_file(filename)
+            volume = lagoon_volume_shoelace(instructions)
+            print(f'\t1. Lagoon volume (shoelace): {volume}')
 
-        #
-        # Part Two
-        #
+            #
+            # Part Two
+            #
+            instructions = load_file(filename, parse_instruction2)
+            volume = lagoon_volume_shoelace(instructions)
+            print(f'\t1. Lagoon volume (shoelace): {volume}')
 
-        print()
+            print()
+            profile.print_stats('cumtime')
 
 if __name__ == '__main__':
     main()
