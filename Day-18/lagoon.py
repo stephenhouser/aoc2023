@@ -174,15 +174,6 @@ def flood_fill(grid, instructions):
 
     return position
 
-def lagoon_volume(instructions, parser=None):
-    """Return the number of filled grid locations"""
-    return len(grid)
-
-def dig_lagoon(instructions):
-    """Dig trench and lagoon according to directions, return volume"""
-    lagoon_map = dig_trench(instructions)
-    flood_fill(lagoon_map, instructions)
-    return lagoon_volume(lagoon_map)
 
 def lagoon_verticies(instructions):
     """Return list of verticies generated in following instructions"""
@@ -208,6 +199,22 @@ def shoelace(verticies):
 
     return int(abs(area) / 2)
 
+
+def lagoon_volume_flood(instructions):
+    """Retur volume of lagoon using flood fill"""
+    lagoon = dig_trench(instructions)
+
+    flood_fill(lagoon, instructions)
+    return len(lagoon)  # count the active locations
+
+def lagoon_volume_shoelace(instructions, parser=None):
+    """Return the number of filled grid locations"""            
+    lagoon = dig_trench(instructions)
+
+    perimeter = len(lagoon) // 2 + 1    # count sides as 1/2
+    interior = shoelace(lagoon_verticies(instructions))
+    return interior + perimeter
+
 # 61661 -- CORRECT (Excel)
 # 60093 not right
 # 69119 too high
@@ -229,16 +236,15 @@ def main():
         #
 
         # flood fill version
-        volume = dig_lagoon(instructions)
-        print(f'\t1. Flood fill volume: {volume}')
+        # volume = lagoon_volume_flood(instructions)
+        # print(f'\t1. Flood fill volume: {volume}')
+
+        volume = lagoon_volume_shoelace(instructions)
+        print(f'\t1. Lagoon: {volume}')
 
         #
         # Part Two
         #
-        lagoon = dig_trench(instructions)
-        perimeter = lagoon_volume(lagoon) // 2 + 1
-        volume = shoelace(lagoon_verticies(instructions)) + perimeter
-        print(f'\t1. Shoelace volume : {volume}')
 
         print()
 
