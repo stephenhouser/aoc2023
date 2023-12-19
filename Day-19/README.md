@@ -1,4 +1,4 @@
-# Day 19: 
+# Day 19: Aplenty
 
 [Advent of Code 2023 -- Day 19](https://adventofcode.com/2023/day/19)
 
