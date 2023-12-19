@@ -45,6 +45,7 @@ class TestAOC(unittest.TestCase):
         volume = lagoon_volume_shoelace(load_file('input.txt', parse_instruction2))
         self.assertEqual(volume, 111131796939729)
 
+
 def parse_instruction1(text):
     """Return a parsed instruction"""
     directions = {'U': complex(0, -1), 'D': complex(0, 1),
@@ -80,6 +81,7 @@ def load_file(filename: str, parser=parse_instruction1):
         print('File %s not found.', filename)
 
     return []
+
 #
 # Grid and complex number printing
 #
@@ -163,13 +165,6 @@ def dig_trench(instructions):
 
     return trench
 
-def on_grid(grid, position):
-    """Return True if position on on the grid"""
-    mins, maxs = get_grid_size(grid)
-
-    return mins.real <= position.real <= maxs.real+1 and \
-            mins.imag <= position.imag <= maxs.imag+1
-
 def flood_fill_one(grid, position, fill_color):
     """Flood fill the grid with fill_color starting at position"""
     to_fill = [position]
@@ -186,6 +181,7 @@ def flood_fill_one(grid, position, fill_color):
 def flood_fill(grid, instructions):
     """Flood fill the grid"""
     position = complex(0, 0)
+    grid_min, grid_max = get_grid_size(grid)
 
     fill_directions = {complex(0, -1): complex( 1,  0), # U -> fill right
                        complex(0,  1): complex(-1,  0), # D -> fill left
@@ -200,7 +196,10 @@ def flood_fill(grid, instructions):
             # flood fill neighbors
             fill_direction = fill_directions[direction]
             neighbor = position + fill_direction
-            while on_grid(grid, neighbor) and not grid.get(neighbor):
+            while grid_min.real <= position.real <= grid_min.real+1 \
+                and grid_max.imag <= position.imag <= grid_max.imag+1 \
+                and not grid.get(neighbor):
+
                 flood_fill_one(grid, neighbor, color)
 
             position += direction
