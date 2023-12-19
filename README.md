@@ -34,3 +34,4 @@ Contains my solutions to the [Advent of Code 2023](https://adventofcode.com/2023
 - [Day 15: Lens Library](https://adventofcode.com/2023/day/15) -- [solution](./Day-15)
 - [Day 16: The Floor Will Be Lava](https://adventofcode.com/2023/day/16) -- [solution](./Day-16)
 - [Day 17: Clumsy Crucible](https://adventofcode.com/2023/day/17) -- [solution](./Day-17)
+- [Day 18: Lavaduct Lagoon](https://adventofcode.com/2023/day/18) -- [solution](./Day-18)
