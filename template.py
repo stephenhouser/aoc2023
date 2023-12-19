@@ -7,6 +7,7 @@ Stephen Houser <stephenhouser@gmail.com>
 import re
 import argparse
 import unittest
+from cProfile import Profile
 
 
 class TestAOC(unittest.TestCase):
@@ -93,23 +94,29 @@ def main():
     """Main Routine, does all the work"""
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', default='input.txt', nargs='+')
+    parser.add_argument('-p', '--profile', action='store_true')
     args = parser.parse_args()
 
     for filename in args.filename:
         print(filename)
-        things = load_file(filename)
 
-        #
-        # Part One
-        #
-        n_things = len(things)
-        print(f'\tNumber of things: {n_things}')
+        with Profile() as profile:
+            things = load_file(filename)
 
-        #
-        # Part Two
-        #
+            #
+            # Part One
+            #
+            n_things = len(things)
+            print(f'\tNumber of things: {n_things}')
+
+            #
+            # Part Two
+            #
 
         print()
+
+    if args.profile:
+        profile.print_stats('cumtime')
 
 if __name__ == '__main__':
     main()
