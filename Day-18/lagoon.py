@@ -254,16 +254,11 @@ def shoelace(verticies):
 
     return int(abs(area) / 2)
 
-# 61661 -- CORRECT (Excel)
-# 60093 not right
-# 69119 too high
-# 78396 too low -- not including all fills
-# 91551 too high -- not including inner fills
-
 def main():
     """Main Routine, does all the work"""
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', default='input.txt', nargs='+')
+    parser.add_argument('-p', '--profile', action='store_true')
     args = parser.parse_args()
 
     for filename in args.filename:
@@ -292,6 +287,8 @@ def main():
             print(f'\t1. Lagoon volume (shoelace): {volume}')
 
             print()
+
+        if args.profile:
             profile.print_stats('cumtime')
 
 if __name__ == '__main__':

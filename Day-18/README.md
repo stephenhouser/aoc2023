@@ -54,6 +54,7 @@ Now the numbers are HUGE. Time to research the Shoelace Algorithm
 
 ## NOTES
 
+
 - Started with trying to avoid flood fill and use a similar technique as [Day 10](../Day-10)
 - After a few hours, I gave in. Flood-fill got the job done for Part 1.
 - Actually visualized by dumping the map as `.csv` and loading in Excel. There are a few `.csv` files with these for happy viewing.
@@ -63,3 +64,11 @@ Now the numbers are HUGE. Time to research the Shoelace Algorithm
 - Figured it had to do with the edges not being counted. Looked at `edges/2` and it was off by 1.
 - Same result worked for `test.txt` and `input.txt`. Called it good and got part 2.
 - Cleaned up. Left flood-fill code in there for future reference.
+
+Submitted:
+
+- 69119 too high
+- 91551 too high -- not including inner fills
+- 78396 too low -- not including all fills
+- 61661 -- CORRECT (verified with Excel :-)
+
