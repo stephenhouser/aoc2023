@@ -37,15 +37,13 @@ class TestAOC(unittest.TestCase):
 
 
 class Rule:
-    FORWARD = 'F'
-    REJECT  = 'R'
-    ACCEPT  = 'A'
+    """Class to represent rules in the sorting of parts on Gear Island"""
 
     def __init__(self, destination, variable, condition, value):
-        self.destination = destination # Accept, Reject, next rule
-        self.variable = variable
-        self.condition = condition
-        self.value = value
+        self.destination = destination  # Accept, Reject, or next workflow
+        self.variable = variable        # 'x', 'm', 'a', or 's'
+        self.condition = condition      # '>' or '<'
+        self.value = value              # value to compare against
 
     def __repr__(self):
         return str(self)
@@ -53,106 +51,93 @@ class Rule:
     def __str__(self):
         if self.variable:
             return f'Rule:{self.variable}{self.condition}{self.value}:{self.destination}'
-        
+
         return f'Rule:{self.destination}'
 
     # returns the name of the next rule to execute, including A, R
     def execute(self, part):
-        # print(f'\t\t{self}:', end='')
-        if self.condition:  # ('a', '>')
-            match self.condition:
-                case '>':
-                    if part[self.variable] > self.value:
-                        # print(f'-> {self.destination} >')
-                        return self.destination
-                    
-                    # print(f'None')
-                    return None
-                case '<':
-                    if part[self.variable] < self.value:
-                        # print(f'-> {self.destination} <')
-                        return self.destination
-                    
-                    # print(f'None')
-                    return None
-        
-        # print(f'-> {self.destination} NA')
+        """Returns the next workflow if rule matched, or None if it did not."""
+        if self.condition and self.condition == '>':
+            if part[self.variable] > self.value:
+                return self.destination
+
+            return None
+
+        if self.condition and self.condition == '<':
+            if part[self.variable] < self.value:
+                return self.destination
+
+            return None
+
         return self.destination
 
+def get_accepted(workflows, start_workflow):
+    """Returns list of accepted ranges of values for x, m, a, and s"""
 
-def get_accepted(workflows, start):
-    start_range = {'x': (1, 4000), 'm': (1, 4000), 'a': (1, 4000), 's': (1, 4000)}
+    xmas = {'x':0, 'm':1, 'a':2, 's':3} # for indexing into the ranges
+    start_range = [[1, 4000], [1, 4000], [1, 4000], [1, 4000]]
 
-    rejected = []
-    accepted = []
-    open = [(workflows[start], start_range)]
+    rejected = []   # rejected ranges (don't really need to track these)
+    accepted = []   # accepted ranges (this is what we want)
 
-    while open:
-        workflow, counts = open.pop()
-        # print(f'{workflow}')
+    open_l = [(workflows[start_workflow], start_range)] # rules to process
 
-        for rule in workflow:
+    while open_l:
+        workflow, ranges = open_l.pop()     # remove item from open list
+
+        for rule in workflow:               # run it's rules
             if rule.condition:
-                rule_counts = counts.copy()
+                v_idx = xmas[rule.variable] # index of variable into counts
+                split_ranges = ranges[:]    # copy so we can modify
+
                 if rule.condition == '<':
-                    rule_counts[rule.variable] = (rule_counts[rule.variable][0], rule.value-1)
-                    counts[rule.variable] = (rule.value, counts[rule.variable][1])
+                    split_ranges[v_idx] = (split_ranges[v_idx][0], rule.value-1)
+                    ranges[v_idx] = (rule.value, ranges[v_idx][1])
 
                 if rule.condition == '>':
-                    rule_counts[rule.variable] = (rule.value+1, rule_counts[rule.variable][1])
-                    counts[rule.variable] = (counts[rule.variable][0], rule.value)
+                    split_ranges[v_idx] = (rule.value+1, split_ranges[v_idx][1])
+                    ranges[v_idx] = (ranges[v_idx][0], rule.value)
 
-                if rule.destination == 'A':
-                    accepted.append(rule_counts)
-                elif rule.destination == 'R':
-                    rejected.append(rule_counts)
-                else:
-                    next_flow = workflows[rule.destination]
-                    open.append((next_flow, rule_counts))
-            elif rule.destination == 'A':
-                accepted.append(counts)
+            if rule.destination == 'A':
+                accepted.append(split_ranges if rule.condition else ranges)
             elif rule.destination == 'R':
-                rejected.append(counts)
+                rejected.append(split_ranges if rule.condition else ranges)
             else:
                 next_flow = workflows[rule.destination]
-                open.append((next_flow, counts))
+                open_l.append((next_flow, split_ranges if rule.condition else ranges))
 
     return accepted
 
-def accepted_combinations(workflows):
-    accepted = get_accepted(workflows, 'in')
-    product = lambda a, c: a * (c[1]-c[0]+1)
-    return sum(reduce(product, xmas.values(), 1) for xmas in accepted)
+def accepted_combinations(workflows, start_workflow):
+    """Return the sum of the products of the accepted range combinations"""
+    def product(a, c):
+        """Product for reduce"""
+        return a * (c[1]-c[0]+1)
 
-# returns the next workflow to apply
-def apply_workflow(workflow, part):
-    # print(f'\tApply {workflow}:')
-    for rule in workflow:
-        result = rule.execute(part)
-        if result:
-            return result
-        
-    print('ERROR: should not get here')
-    return None
-        
-def process_part(workflows, part):
-    destination = 'in'
+    accepted = get_accepted(workflows, start_workflow)
+    return sum(reduce(product, xmas, 1) for xmas in accepted)
+
+def process_part(workflows, start_workflow, part):
+    """Return the sum of the part values for Accepted parts"""
+
+    destination = start_workflow
     while destination not in ('A', 'R'):
         workflow = workflows[destination]
-        destination = apply_workflow(workflow, part)
+        for rule in workflow:
+            if result := rule.execute(part):
+                destination = result
+                break
 
     if destination == 'A':
-        # print(part.values())
         return sum(part.values())
-    
-    return 0
 
-    
+    return 0
 
 
 workflow_re = re.compile(r'([a-z]+){(.*)}')
 condition_re = re.compile(r'([asmx])([><])(\d+):([a-zAR]+)')
 def parse_workflow(text):
+    """Return a parsed "workflow" which is a list of Rules"""
     match = workflow_re.match(text)
     workflow_name = match.group(1)
 
@@ -171,21 +156,26 @@ def parse_workflow(text):
 
     return (workflow_name, rules)
 
-def parse_workflow_two(text):
-    match = workflow_re.match(text)
-    workflow_name = match.group(1)
 
-    rules = match.group(2).split(',')
-    return (workflow_name, rules)
+part_re = re.compile(r'([asmx])=(\d+)')
+def parse_part(text):
+    """Return a "part" parsed from text"""
+    return {x : int(y) for x, y in part_re.findall(text)}
 
-    # pop in
-    #     add s<1351:px
-    #     add s>1350:qqz
-    
-    # pop s<1351:px
-    #     add s<1351:a<2006:qkg
-    #     add s<1351:a>2005:m>2090:A
-    #     add s<1351:a>2005:m<2091:rfg
+def load_file(filename: str):
+    """Load lines from file into workflows(rules) and parts"""
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            (workflow_text, instructions_text) = file.read().split('\n\n')
+            workflows = {x: y for x, y in map(parse_workflow, workflow_text.split('\n'))}
+            parts = map(parse_part, instructions_text.split('\n'))
+            return (workflows, list(parts))
+
+    except FileNotFoundError:
+        print('File %s not found.', filename)
+
+    return []
+
 
 class Node:
     def __init__(self, rule):
@@ -200,35 +190,14 @@ class Node:
     def __repr__(self):
         return str(self)
 
-    # def __str__(self):
-    #     return f'{self.rule}'
-
     def mstr(self, level=0):
-        # ret = "\t"*level + repr(self.rule) + "\n"
         if self.rule in ('A', 'R'):
             return self.rule + '\n'
-        
+
         ret =  f'{self.variable} {self.op} {self.value} -> ' + self.left.mstr(level+1)
         ret += '  '*level + f'{self.variable} !{self.op} {self.value} -> ' + self.right.mstr(level+1)
         return ret
-        # ret = "\t"*level + self.variable + ' < ' + str(self.value) + "\n"
-        # if self.lt:
-        #     ret += 'LT:' + self.lt.mstr(level+1)
-        # if self.ge:
-        #     ret += 'GE:' + self.ge.mstr(level+1)
-        # return ret
 
-# vals = {'x': (1, 4000), 'm': (1, 4000), 'a': (1, 4000), 's': (1, 4000)}
-# def traverse(node, values):
-#     if node.rule == 'A':
-#         print(values)
-#     elif node.rule != 'R':
-#         if node.op == '<':
-#         traverse(node.left, values)
-#         traverse(node.right, values)
-
-
-# condition_re = re.compile(r'([asmx])([><])(\d+):([a-zAR]+)')
 def make_tree(workflows, rules):
     # print(f'make_tree: {rules}')
 
@@ -238,7 +207,6 @@ def make_tree(workflows, rules):
         else:
             return make_tree(workflows, workflows[rules[0]])
 
-    #rule_parts = rules[0].split(':')
     match = condition_re.match(rules[0])
     node = Node(rules[0])
 
@@ -249,40 +217,8 @@ def make_tree(workflows, rules):
 
     node.left = make_tree(workflows, [destination])
     node.right = make_tree(workflows, rules[1:])
-    # if comparison == '<':
-    #     node.lt = make_tree(workflows, [destination])
-    #     node.ge = make_tree(workflows, rules[1:])
-    # else:
-    #     node.value += 1
-    #     node.lt = make_tree(workflows, rules[1:])
-    #     node.ge = make_tree(workflows, [destination])
-
     return node
 
-
-part_re = re.compile(r'([asmx])=(\d+)')
-def parse_part(text):
-    return {x : int(y) for x, y in part_re.findall(text)}
-
-def load_file(filename: str):
-    """Load lines from file into ___
-        
-       filename: the file to read game descriptions from.
-       returns: ...
-    """
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            # read a grid of text into 2D grid
-            (workflow_text, instructions_text) = file.read().split('\n\n')
-            workflows = {x: y for x, y in map(parse_workflow, workflow_text.split('\n'))}
-            parts = map(parse_part, instructions_text.split('\n'))
-
-            return (workflows, list(parts))
-
-    except FileNotFoundError:
-        print('File %s not found.', filename)
-
-    return []
 
 def main():
     """Main Routine, does all the work"""
@@ -305,7 +241,7 @@ def main():
             
             p = []
             for part in parts:
-                p.append(process_part(workflows, part))
+                p.append(process_part(workflows, 'in', part))
 
             print(p)
             print(sum(p))
@@ -313,7 +249,7 @@ def main():
             #
             # Part Two
             #
-            print(accepted_combinations(workflows))
+            print(accepted_combinations(workflows, 'in'))
             # t = make_tree(workflows, ['in'])
             # print(t.mstr())
 
