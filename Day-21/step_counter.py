@@ -183,7 +183,7 @@ def main():
             start = find_start(garden_map)
             gardens = find_gardens(garden_map, start, 64)
 
-            # print_grid(garden_map, gardens)
+            print_grid(garden_map, gardens)
             print(f'\t1. Unique gardens reachable in 64 steps: {len(gardens):,}')
 
             #
