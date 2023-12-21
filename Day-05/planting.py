@@ -27,7 +27,7 @@ class PlantingMap:
         for match in re.finditer(r'(\d+)\s+(\d+)\s+(\d+)', map_text):
             map_range = int(match.group(1))
             map_domain = int(match.group(2))
-            length = int(match.group(3)) + 1 # +1 to include endpoint in range
+            length = int(match.group(3))# + 1 # +1 to include endpoint in range
             offset = map_range - map_domain
             # each entry in the planting_map is: map_domain and offset to apply
             # if the seed value is in the domain to get it in the range
@@ -97,28 +97,33 @@ def apply_mapping(block, mapping):
 
         domain either gets mapped or left over
     """
-    offset = mapping[2]
-    mappings = []
+    # block is the seed range we are considering
+    # mapping is the plant-soil or what-what mapping
+    TOP = 1
+    BOTTOM = 0
 
-    if block[1] < mapping[0] or block[0] > mapping[1]:
+    mappings = []       # our result
+    offset = mapping[2] # offset for mapping to add if we map
+
+    if block[TOP] < mapping[BOTTOM] or mapping[TOP] < block[BOTTOM]:
         # outside domain, leave alone, check next range
         return (None, block)
 
     # completely enclosed in domain of mapping, save it as mapped
-    if block[0] >= mapping[0] and block[1] <= mapping[1]:
-        return (((block[0]+offset, block[1]+offset), ), None)
+    if mapping[BOTTOM] <= block[BOTTOM] and block[TOP] <= mapping[TOP]:
+        return (((block[BOTTOM]+offset, block[TOP]+offset), ), None)
 
     # split bottom part at domain[0], map the overlap, keep trying on the extra
-    if block[0] <= mapping[0] and block[1] <= mapping[1]:
-        mappings.append((mapping[0]+offset, block[1]+offset))
-        block = (block[0], mapping[0])
+    if block[BOTTOM] < mapping[BOTTOM] and block[TOP] <= mapping[TOP]:
+        mappings.append((mapping[BOTTOM]+offset, block[TOP]+offset))
+        block = (block[BOTTOM], mapping[BOTTOM]-1)
 
     # split top part at domain[1], map the overlap, keep trying on the extra
-    if block[0] >= mapping[0] and block[1] >= mapping[1]:
-        mappings.append((block[0]+offset, mapping[1]+offset-1))
-        block = (mapping[1]-1, block[1])
+    if mapping[BOTTOM] < block[BOTTOM] and mapping[TOP] <= block[TOP]:
+        mappings.append((block[BOTTOM]+offset, mapping[1]+offset-1))
+        block = (mapping[TOP], block[TOP])
 
-    return (mappings, block)
+    return mappings, block
 
 def apply_mappings(p_blocks, plant_map):
     """Returns the result of applying all the mappings for a plant map
@@ -128,16 +133,27 @@ def apply_mappings(p_blocks, plant_map):
             [(x1, y1), (x2, y2), ...]
     """
     blocks = list(p_blocks)
+    print('\nBLOCKS\n', blocks, '==>\n')
 
     mapped_blocks = []
     while len(blocks) > 0:
+        # pop the next block to map
         block = blocks.pop()
+        print(f'block {block}')
 
+        # for each range (mapping) in the planting map
         for mapping in plant_map.planting_map:
-            (mapped, block) = apply_mapping(block, mapping)
+            # we get back possibly two parts
+            # mapped -> what was remapped
+            # block  -> what maps stright through with no change in numbers
+            mapped, block = apply_mapping(block, mapping)
+
+            print(f'\tapply {mapping} {mapped} : {block}')
+            # add the part that got mapped to our result
             if mapped:
                 mapped_blocks.extend(mapped)
 
+            # if there's nothing left, we are done
             if not block:
                 break
 
@@ -145,10 +161,11 @@ def apply_mappings(p_blocks, plant_map):
         if block:
             mapped_blocks.append(block)
 
+    print('\t', mapped_blocks, '\n')
     return mapped_blocks
 
 def locate_seeds(seed_blocks, seed_type, almanac):
-    """Returns lost of locations (ranges) that seeds from seed_blocks 
+    """Returns last of locations (ranges) that seeds from seed_blocks 
        will end up
     """
     if seed_type == 'location':
