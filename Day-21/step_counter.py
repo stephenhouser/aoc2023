@@ -20,30 +20,30 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Part 1 solution for test.txt"""
-        things = load_file('test.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        garden_map = load_file('test.txt')
+        gardens = find_gardens(garden_map, find_start(garden_map), 6)
+        self.assertEqual(len(gardens), 16)
 
     def test_part1_solution(self):
         """Part 1 solution for input.txt"""
-        things = load_file('input.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        garden_map = load_file('input.txt')
+        gardens = find_gardens(garden_map, find_start(garden_map), 64)
+        self.assertEqual(len(gardens), 3_746)
 
     #
     # Part Two
     #
-    def test_part2_example(self):
-        """Part 2 solution for test.txt"""
-        things = load_file('test.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+    # def test_part2_example(self):
+    #     """Part 2 solution for test.txt"""
+    #     things = load_file('test.txt')
+    #     result = len(things)
+    #     self.assertEqual(result, 10)
 
-    def test_part2_solution(self):
-        """Part 2 solution for input.txt"""
-        things = load_file('input.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+    # def test_part2_solution(self):
+    #     """Part 2 solution for input.txt"""
+    #     things = load_file('input.txt')
+    #     result = len(things)
+    #     self.assertEqual(result, 10)
 
 
 class Thing:
@@ -181,7 +181,7 @@ def main():
             #
             # print_grid(garden_map)
             start = find_start(garden_map)
-            gardens = find_gardens(garden_map, start, 64)
+            gardens = find_gardens(garden_map, start, 63)
 
             print_grid(garden_map, gardens)
             print(f'\t1. Unique gardens reachable in 64 steps: {len(gardens):,}')
@@ -199,4 +199,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #unittest.main()
