@@ -17,30 +17,31 @@ class TestAOC(unittest.TestCase):
     # Part One
     #
     def test_part1_example(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 2), 0)
+        """Part 1 solution for test.txt"""
+        things = load_file('test.txt')
+        result = len(things)
+        self.assertEqual(result, 10)
 
     def test_part1_solution(self):
-        """Live data for part 1 data from input.txt"""
-        self.assertEqual(test_function('input.txt', 200), 0)
+        """Part 1 solution for input.txt"""
+        things = load_file('input.txt')
+        result = len(things)
+        self.assertEqual(result, 10)
 
     #
     # Part Two
     #
     def test_part2_example(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('test.txt', 10), 0)
+        """Part 2 solution for test.txt"""
+        things = load_file('test.txt')
+        result = len(things)
+        self.assertEqual(result, 10)
 
     def test_part2_solution(self):
-        """Test example 1 data from test.txt"""
-        self.assertEqual(test_function('input.txt', 1000000), 0)
-
-
-def test_function(filename, *args):
-    """Loads sample data and calculates answer...
-    """
-    stuff = load_file(filename)
-    return len(stuff) * args[0]
+        """Part 2 solution for input.txt"""
+        things = load_file('input.txt')
+        result = len(things)
+        self.assertEqual(result, 10)
 
 
 class Thing:
@@ -68,11 +69,7 @@ def print_grid(grid):
         print()
 
 def load_file(filename: str):
-    """Load lines from file into ___
-        
-       filename: the file to read game descriptions from.
-       returns: ...
-    """
+    """Load lines from file into ___"""
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             # read a grid of text into 2D grid
@@ -107,11 +104,13 @@ def main():
             # Part One
             #
             n_things = len(things)
-            print(f'\tNumber of things: {n_things}')
+            print(f'\t1. Number of things: {n_things:,}')
 
             #
             # Part Two
             #
+            # n_things = len(things)
+            # print(f'\t2. umber of things: {n_things:,}')
 
         print()
 

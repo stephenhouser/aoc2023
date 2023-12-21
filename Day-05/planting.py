@@ -188,14 +188,16 @@ def main():
         # Part Two
         #
         min_location = None
-        for (seed, length) in pairwise(seeds):
+        for (seed, length) in list(pairwise(seeds))[2:3]:
             locations = locate_seeds([(seed, seed+length)], 'seed', almanac)
-
             # get first element of each range
             local_minimum = min(map(lambda x: x[0], locations))
+            #print(locations)
 
-            #print('Local min is', local_minimum)
-            min_location = local_minimum if not min_location else min(min_location, local_minimum)
+            if min_location is None:
+                min_location = local_minimum
+            else:
+                min_location = min(min_location, local_minimum)
 
         print(f'\tPart 2: The minimim location for planting is {min_location}')
 
