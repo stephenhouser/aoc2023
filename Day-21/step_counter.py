@@ -9,6 +9,7 @@ import argparse
 import unittest
 from cProfile import Profile
 from functools import cache
+from collections import deque
 
 
 class TestAOC(unittest.TestCase):
@@ -118,42 +119,41 @@ def load_file(filename: str):
 
     return []
 
-def fill(grid, start_position, start_steps=16):
+def find_gardens(grid, start_position, end_steps=16):
     rows = set([int(n.imag) for n in grid])    # set comprehension R1718
     cols = set([int(n.real) for n in grid])
 
-    walker = [(start_position, start_steps)]
+    walker = deque([(start_position, 0)])
     closed = set()
     repeats = set()
 
+    walker_len = len(walker)
     while walker:
-        position, steps = walker.pop()
-        print(f'walker {c_str(position)} {steps}')
+        position, steps = walker.popleft()
+        # print(f'walker {c_str(position)} {steps}')
 
-        if (position, steps) in repeats:
-            print(f'REPEAT {c_str(position)}, {steps}')
+        if position.real not in cols or position.imag not in rows:
             continue
 
-        assert steps != 0
+        if grid.get(position) == '#':
+            continue
 
-        steps -= 1
+        if (position, steps) in repeats:
+            continue
+
+        repeats.add((position, steps))
+
+        if steps == end_steps:
+            closed.add(position)
+            continue
+
         for direction in (1, -1, 1j, -1j):
             neighbor = position + direction
+            walker.append((neighbor, steps+1))
 
-            if neighbor.real in cols and neighbor.imag in rows \
-                and grid.get(neighbor) != '#':
+        walker_len = max(walker_len, len(walker))
 
-                if steps == 0:
-                    print(f'closed {c_str(neighbor)}, {steps}')
-                    closed.add(neighbor)
-                elif (neighbor, steps) in walker:
-                    print(f'duplicate {c_str(neighbor)}, {steps}')
-                else:
-                    # is not already someonw there
-                    walker.append((neighbor, steps))
-
-        repeats.add((position, steps+1))
-
+    print(f'max walkers = {walker_len}')
     return closed
 
 
@@ -179,17 +179,12 @@ def main():
             #
             # Part One
             #
-            print_grid(garden_map)
+            # print_grid(garden_map)
             start = find_start(garden_map)
-            ends = fill(garden_map, start, 64)
+            gardens = find_gardens(garden_map, start, 64)
 
-            #print_grid(garden_map, ends)
-            print(len(ends))
-            #print(garden_map.values())
-
-            #print(len(list(filter(lambda x: x=='O', garden_map.values()))))
-
-            # print(f'\t1. Number of things: {n_things:,}')
+            # print_grid(garden_map, gardens)
+            print(f'\t1. Unique gardens reachable in 64 steps: {len(gardens):,}')
 
             #
             # Part Two
