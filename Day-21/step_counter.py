@@ -4,13 +4,10 @@ Advent of Code 2023 - Day 21: Step Counter
 Stephen Houser <stephenhouser@gmail.com>
 """
 
-import re
 import argparse
 import unittest
 from cProfile import Profile
-from functools import cache
 from collections import deque
-from collections.abc import Iterable
 
 
 class TestAOC(unittest.TestCase):
@@ -22,24 +19,54 @@ class TestAOC(unittest.TestCase):
     def test_part1_example(self):
         """Part 1 solution for test.txt"""
         garden_map = load_file('test.txt')
-        gardens = find_gardens(garden_map, find_start(garden_map), 6)
-        self.assertEqual(len(gardens), 16)
+        gardens_reached = find_gardens_brute(garden_map, 6)
+        self.assertEqual(gardens_reached, 16)
+
+    def test_part1_example_fast(self):
+        """Part 1 solution for test.txt"""
+        garden_map = load_file('test.txt')
+        gardens_reached = find_gardens_fast(garden_map, [6])[0]
+        self.assertEqual(gardens_reached, 16)
 
     def test_part1_solution(self):
         """Part 1 solution for input.txt"""
         garden_map = load_file('input.txt')
-        gardens = find_gardens(garden_map, find_start(garden_map), 64)
-        self.assertEqual(len(gardens), 3_746)
+        gardens_reached = find_gardens_brute(garden_map, 64)
+        self.assertEqual(gardens_reached, 3_746)
+
+    def test_part1_solution_fast(self):
+        """Part 1 solution for input.txt"""
+        garden_map = load_file('input.txt')
+        gardens_reached = find_gardens_fast(garden_map, [64])[0]
+        self.assertEqual(gardens_reached, 3_746)
 
     #
     # Part Two
     #
-    # def test_part2_example(self):
-    #     """Part 2 solution for test.txt"""
-    #     things = load_file('test.txt')
-    #     result = len(things)
-    #     self.assertEqual(result, 10)
+    def test_part2_example_10(self):
+        """Part 2 solution for test.txt"""
+        garden_map = load_file('test.txt')
+        gardens_reached = find_gardens_fast(garden_map, [10])[0]
+        self.assertEqual(gardens_reached, 50)
 
+    def test_part2_example_50(self):
+        """Part 2 solution for test.txt"""
+        garden_map = load_file('test.txt')
+        gardens_reached = find_gardens_fast(garden_map, [50])[0]
+        self.assertEqual(gardens_reached, 1_594)
+
+    def test_part2_example_100(self):
+        """Part 2 solution for test.txt"""
+        garden_map = load_file('test.txt')
+        gardens_reached = find_gardens_fast(garden_map, [100])[0]
+        self.assertEqual(gardens_reached, 6_536)
+        
+    # def test_part2_example_500(self):
+    #     """Part 2 solution for test.txt"""
+    #     garden_map = load_file('test.txt')
+    #     gardens_reached = find_gardens_fast(garden_map, [500])[0]
+    #     self.assertEqual(gardens_reached, 167_004)
+        
     # def test_part2_solution(self):
     #     """Part 2 solution for input.txt"""
     #     things = load_file('input.txt')
@@ -64,7 +91,7 @@ class Map:
         self.rows = 0
         self.cols = 0
         self._map = None
-        self._load_map(map_data)
+        self.load_map(map_data)
 
     def get(self, x, y=None):
         if isinstance(x, complex):
@@ -73,8 +100,8 @@ class Map:
             return self._map.get(complex(x,y))
     
     def infinite_get(self, position):
-        x = position.real % cols
-        y = position.imag % rows
+        x = position.real % self.cols
+        y = position.imag % self.rows
         return self.get(complex(int(x),int(y)))    
 
     def load_map(self, text):
@@ -83,23 +110,31 @@ class Map:
         else:
             lines = text
 
-        self._map = {complex(i,j): c for j, r in enumerate(text)
+        self._map = {complex(i,j): c for j, r in enumerate(lines)
                      for i, c in  enumerate(r.strip())}
+        self.rows = int(max([n.imag for n in self._map]))+1
+        self.cols = int(max([n.real for n in self._map]))+1 
 
+    def get_start(self):
+        starts = list(filter(lambda x: self._map[x] == 'S', self._map))
+        
+        assert len(starts) == 1
+        return starts[0]
+    
     def print(self, highlights=None):
         """Pretty print 2D grid in readable form"""
         print('  ', end='')
         _ = [print(f'{x%10}', end='') for x in range(self.cols)]
         print('\n :', end='')
         _ = [print('-', end='') for x in range(self.cols)]
-        for y in range(rows):
+        for y in range(self.rows):
             print(f'\n{y%10}:', end='')
-            for x in range(cols):
+            for x in range(self.cols):
                 symbol = self.get(x, y)
                 if not symbol:
                     print(ascii_color('777777', '~'), end='')
                 elif highlights and complex(x,y) in highlights:
-                    print(ascii_color('ffffff', 'O'), end='')
+                    print(ascii_color('ffffff', symbol), end='')
                 else:
                     print(symbol, end='')
 
@@ -113,85 +148,23 @@ class Map:
         """Return string representation"""
         return f'Empty'
 
-
-def print_gridX(grid, highlight=None):
-    """Pretty print 2D grid in readable form"""
-    rows = set([int(n.imag) for n in grid])    # set comprehension R1718
-    cols = set([int(n.real) for n in grid])
-
-    print(' :', end='')
-    _ = [print(f'{x%10}', end='') for x in cols] # header
-    print('\n :', end='')
-    _ = [print('-', end='') for x in cols] # header
-    for y in rows:
-        print(f'\n{y%10}:', end='')
-        for x in cols:
-            symbol = grid.get(complex(x,y))
-            if highlight and complex(x,y) in highlight:
-                    print(ascii_color('ffffff', 'O'), end='')
-            else:
-                    print(symbol, end='')
-
-    print()
-
-
-def print_grid(grid, highlight=None):
-    """Pretty print 2D grid in readable form"""
-
-    print(' :', end='')
-    _ = [print(f'{x%10}', end='') for x in range(cols)] # header
-    print('\n :', end='')
-    _ = [print('-', end='') for x in range(cols)] # header
-    for y in range(3*rows):
-        print(f'\n{y%10}:', end='')
-        for x in range(3*cols):
-            symbol = igrid(grid, complex(x,y))
-            if not symbol:
-                print('#', end='')
-            elif highlight and complex(x,y) in highlight:
-                    print(ascii_color('ffffff', 'O'), end='')
-            else:
-                print(symbol, end='')
-
-    print()
-
-
 def load_file(filename: str):
     """Load lines from file into ___"""
     try:
         with open(filename, 'r', encoding='utf-8') as file:
-            # returns a dictionary indexed by i,j with c as the value
-            return {complex(i,j): c for j, r in enumerate(file)
-                                for i, c in enumerate(r.strip())}      
-
-            # # only load grid locations that are valid  
-            # return {complex(i,j): c for j, r in enumerate(file)
-            #                         for i, c in enumerate(r) if c in '.S'}
+            return Map(file)
 
     except FileNotFoundError:
         print('File %s not found.', filename)
 
     return []
 
-cols = None
-rows = None
-
-def igrid(grid, position):
-    # return complex(position.real % 131, position.imag % 131)
-    x = position.real % cols
-    y = position.imag % rows
-    grid_pos = complex(int(x),int(y))
-    if grid.get(grid_pos) == None:
-        print(x, y, c_str(grid_pos), grid.get(grid_pos))
-    return grid.get(grid_pos)
-    
-
-def find_gardensX(grid, start_position, end_steps=16):
+def find_gardens_brute(garden_map, end_steps=16):
     """Return the gardens (positions) that would result from
         walking exactly end_steps steps from start_position.
     """
-    walker = deque([(start_position, 0)])
-    closed = set()
+    walker = deque([(garden_map.get_start(), 0)])
+    reached = set()
     repeats = set()
 
     while walker:
@@ -199,7 +172,7 @@ def find_gardensX(grid, start_position, end_steps=16):
         # print(f'walker {c_str(position)} {steps}')
 
         # ignore rocks
-        if igrid(grid, position) == '#':
+        if garden_map.get(position) == '#':
             continue
 
         # ignore repeated positions with steps
@@ -210,7 +183,7 @@ def find_gardensX(grid, start_position, end_steps=16):
 
         # if we are at the end of a path, close it out
         if steps == end_steps:
-            closed.add(position)
+            reached.add(position)
             continue
 
         # add neighbors and walkers
@@ -218,34 +191,28 @@ def find_gardensX(grid, start_position, end_steps=16):
             neighbor = position + direction
             walker.append((neighbor, steps+1))
 
-    # print(f'max walkers = {walker_len}')
-    return closed
+    return len(reached)
 
-def find_gardens(grid, start, end_steps):
+def find_gardens_fast(garden_map, step_counts):
     closed = []
-    open = {start}
+    open = {garden_map.get_start()}
 
-    for step in range(3 * 131):
-        if step == 64: 
-            print(len(open))
-
-        if step % 131 == 64:
+    step = 0
+    while len(step_counts):
+        if step in step_counts:
+            step_counts.pop(step_counts.index(step))
             closed.append(len(open))
 
         new_open = set()
-        for d in {1, -1, 1j, -1j}:
-            for p in open:
-                if igrid(grid, p+d) != '#':
-                    new_open.add(p+d)
+        for direction in (1, -1, 1j, -1j):
+            for position in open:
+                if garden_map.infinite_get(position+direction) != '#':
+                    new_open.add(position+direction)
+
         open = new_open
+        step += 1
 
     return closed
-
-def find_start(grid):
-    starts = list(filter(lambda x: grid[x] == 'S', grid))
-
-    assert len(starts) == 1
-    return starts[0]
 
 def main():
     """Main Routine, does all the work"""
@@ -259,63 +226,55 @@ def main():
 
         with Profile() as profile:
             garden_map = load_file(filename)
-            global rows, cols
-            rows = len(set([int(n.imag) for n in garden_map]))    # set comprehension R1718
-            cols = len(set([int(n.real) for n in garden_map]))
+            # garden_map.print([garden_map.get_start()])
 
             #
             # Part One
             #
-            #print_grid(garden_map)
+            steps = 64
+            gardens_reached = find_gardens_brute(garden_map, steps)
+            print(f'\t1. Unique gardens reachable in 64 steps: {gardens_reached:,}')
 
-            # rows = set([int(n.imag) for n in garden_map])    # set comprehension R1718
-            # cols = set([int(n.real) for n in garden_map])
-            # start = complex(len(cols)//2, len(rows)//2)
-            start = find_start(garden_map)
-
-
-
-
-            # # for n in (65, 196, 327):
-            # for n in (6, 10, 50, 100, 500):
-            #     gardens = find_gardens(garden_map, start, n)
-            #     # print_grid(garden_map, gardens)
-            #     print(n, ',', len(gardens))
-            #     # print(f'\t1. Unique gardens reachable in 64 steps: {n}:{len(gardens):,}')
+            gardens_reached = find_gardens_fast(garden_map, [steps])[0]
+            print(f'\t1. Unique gardens reachable in {steps:,} steps: {gardens_reached:,}')
 
             #
             # Part Two
             #
-            # n_things = len(things)
-            # print(f'\t2. umber of things: {n_things:,}')
-            # 560_433_720_286_689 too low
-            # 623_540_829_615_589 -- fits the quadratic
-            # closed = find_gardens(garden_map, start, 0)
-            closed = [3889, 34504, 95591]
-            print(closed)
 
-            def lagrange_interpolation(v0, v1, v2):
-                return [
-                    v0 / 2 - v1 + v2 / 2,
-                    -3 * (v0 / 2) + 2 * v1 - v2 / 2,
-                    v0
-                ]
+            # one "map" will fill up in half_map steps
+            half_map = garden_map.rows // 2
+            # we search for three terms to interpolate a quadratic
+            step_search = [half_map, 
+                           half_map + garden_map.rows, 
+                           half_map + garden_map.rows * 2]
+            # find the terms
+            #gardens_reached = find_gardens_fast(garden_map, step_search)
+            gardens_reached = [3889, 34504, 95591]
+            print('gardens reached', gardens_reached)
 
-            l = lagrange_interpolation(*closed)
-            print(l)
-
-            n = 26501365 // 131
-            ans = l[2] + l[1] * n + l[0] * n**2 
-            print(ans)
-
-            # 65 , 196, 327
+            # Wolfram Alpha...
             # quadratic fit calculator {{0, 3889}, {1,34504}, {2,95591}}
             # least-squares best fit = 3889 + 15379 x + 15236 x^2
+            # divide steps by the map size; x= 26501365 // 131
             # solve 3889 + 15379 x + 15236 x^2 with x=202300
-            # 3889 + 15379 x + 15236 x^2 with x=26501365  202300
+            # 623_540_829_615_589 -- fits the quadratic!!
+            def lagrange_interpolation(vec):
+                """Returns the three terms of the quadratic; c + bx + ax**2
+                    Can't say I understand this one, just used the formula
+                """
+                return [int(vec[0] / 2 - vec[1] + vec[2] / 2),
+                        int(-3 * (vec[0] / 2) + 2 * vec[1] - vec[2] / 2),
+                        int(vec[0])
+                    ]
 
-            # 26501365 // 131
-            # print(f(26501365 // 131, *closed))
+            steps = 26_501_365
+            x = steps // garden_map.rows
+            a, b, c = lagrange_interpolation(gardens_reached)
+            print('quadratic terms', a, b, c)
+
+            gardens_reached = a*x**2 + b*x + c
+            print(f'\t2. Unique gardens reached in {steps:,} steps: {gardens_reached:,}')
 
         print()
 
