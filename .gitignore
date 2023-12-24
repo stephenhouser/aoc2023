@@ -1,3 +1,5 @@
 input.txt
+input*.txt
 .cookies
 __pycache__/
+.vscode
