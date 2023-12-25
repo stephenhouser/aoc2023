@@ -9,6 +9,7 @@ import argparse
 import unittest
 from cProfile import Profile
 from heapq import heappush, heappop
+from collections import defaultdict
 
 class TestAOC(unittest.TestCase):
     """Test Advent of Code"""
@@ -48,12 +49,22 @@ def c_str(cplx):
     """Pretty print a complex number as (i,j)"""
     return f'({int(cplx.real)}, {int(cplx.imag)})'
 
+def c_tup(cplx):
+    """Return a tuple(x,y) from a complex(x,y)"""
+    return (int(cplx.real), int(cplx.imag))
+
 def ascii_color(hex_color, text):
     """Return text in ASCII color"""
     r = int(hex_color[0:2], 16)
     g = int(hex_color[2:4], 16)
     b = int(hex_color[4:6], 16)
     return f'\033[38;2;{r};{g};{b}m{text}\033[0m'
+
+class Node:
+    def __init__(self):
+        self.x = None
+        self.y = None
+        self.neighbors = None
 
 class Map:
     """Represents a ___"""
@@ -63,20 +74,26 @@ class Map:
         self.start = None
         self.finish = None
         self._map = None
+        self.nodes = defaultdict(list)
         self.load_map(map_data)
 
     def get(self, x, y=None):
+        """Return symbol at position on the map"""
         if isinstance(x, complex):
             return self._map.get(x)
 
         return self._map.get(complex(x,y))
 
     def infinite_get(self, position):
+        """Return symbol at position on the map
+            as if the map were infinite copies of itself
+        """
         x = position.real % self.cols
         y = position.imag % self.rows
         return self.get(complex(int(x),int(y)))
 
     def load_map(self, map_data):
+        """Load the map from map_data"""
         if isinstance(map_data, str):
             lines = map_data.split('\n')
         else:
@@ -92,16 +109,41 @@ class Map:
         self.finish = complex(self.cols-2, self.rows-1)
 
     def get_start(self):
+        """Return the start location on the map"""
         starts = list(filter(lambda x: self._map[x] == 'S', self._map))
 
         assert len(starts) == 1
         return starts[0]
 
+    def get_nodes(self):
+        """Returns dictionary of nodes on the map, keys are complex(x,y).
+            Nodes are where two or more paths join
+        """
+        if not self.nodes:
+            nodes = {}
+            nodes[self.start] = []
+            nodes[self.finish] = []
+
+            for location in self._map:
+                adjacent = []
+                for direction in (1, -1, 1j, -1j):
+                    symbol = self.get(location+direction)
+                    if symbol and symbol != '#':
+                        adjacent.append(location+direction)
+
+                if len(adjacent) >= 3: # and not location in nodes:
+                    nodes[location] = []
+
+            self.nodes = nodes
+
+        return self.nodes
+
     def print(self, highlights=None):
+        """Pretty print map in readable form"""
+
         print('start', c_str(self.start), self.get(self.start))
         print('finish', c_str(self.finish), self.get(self.finish))
 
-        """Pretty print 2D grid in readable form"""
         print('  ', end='')
         _ = [print(f'{x%10}', end='') for x in range(self.cols)]
         print('\n :', end='')
@@ -129,22 +171,7 @@ class Map:
         """Return string representation"""
         return f'Empty'
 
-def find_nodes(trail_map):
-    nodes = [trail_map.start, trail_map.finish]
-    for spot in trail_map._map:
-        neighbors = []
-        for direction in (1, -1, 1j, -1j):
-            n = trail_map.get(spot+direction)
-            if n and n != '#':
-                neighbors.append(spot+direction)
-
-        if len(neighbors) >= 3:
-            print('Node:', c_str(spot), neighbors)
-            nodes.append(spot)
-
-    return nodes
-
-def symbol_dir(symbol, direction):
+def symbol_direction(symbol, direction):
     if not symbol:
         return False
 
@@ -166,64 +193,43 @@ def symbol_dir(symbol, direction):
 
     return False
 
-def find_neighbors(trail_map, nodes, spot):
+def find_neighbors(trail_map, node):
     neighbors = []
-    open_l = [(0, spot)]
-    visited = set()
-    visited.add(spot)
+    paths = [(0, node)]
 
-    print(f'Find neighbors for {spot}')
-    while open_l:
-        steps, position = open_l.pop()
+    # to prevent backtracking
+    visited = set()
+    visited.add(node)
+
+    # print(f'Find neighbors for {node}')
+    while paths:
+        distance, position = paths.pop()
 
         for direction in (1, -1, 1j, -1j):
             neighbor = position+direction
             if neighbor not in visited:
                 visited.add(neighbor)
-
-                neighbor_symbol = trail_map.get(neighbor)
-                if symbol_dir(neighbor_symbol, direction):
-                    if neighbor in nodes:
-                        print(f'\tfound {neighbor} {neighbor_symbol}')
-                        neighbors.append((neighbor, steps+1))
+                symbol = trail_map.get(neighbor)
+                if symbol and symbol_direction(symbol, direction):
+                    if neighbor in trail_map.get_nodes():
+                        # print(f'\tfound {neighbor} {neighbor_symbol}')
+                        neighbors.append((neighbor, distance+1))
                     else:
-                        print(f'\twalk {neighbor} {neighbor_symbol}')
-                        open_l.append((steps+1, neighbor))
+                        # print(f'\twalk {neighbor} {neighbor_symbol}')
+                        paths.append((distance+1, neighbor))
 
+    # returns list[tuple(node: complex, distance: int)]
     return neighbors
 
-def find_paths(trail_map):
-    nodes = find_nodes(trail_map)
+def get_node_neighbors(trail_map):
     neighbors = []
-    for node in nodes:
-        neighbors.append(find_neighbors(trail_map, nodes, node))
+    for node in trail_map.get_nodes():
+        neighbors.append(find_neighbors(trail_map, node))
 
-    return dict(zip(nodes, neighbors))
+    return dict(zip(trail_map.get_nodes(), neighbors))
 
-# def find_path(trail_map):
-#     open = []
-#     closed = {}
-
-#     heappush(open, (0, (trail_map.start.real, trail_map.start.imag)))
-#     while open:
-#         steps, position = heappop(open)
-#         closed[complex(*position)] = steps
-
-#         for direction in (1, -1, 1j, -1j):
-#             neighbor = complex(*position) + direction
-#             if trail_map.get(neighbor) and neighbor not in closed:
-#                 n = trail_map.get(neighbor)
-#                 if n == '.' or (n, direction) in (('^', -1j), ('v', 1j), ('<', -1), ('>', 1)):
-#                     heappush(open, (steps-1, (neighbor.real, neighbor.imag)))
-
-#     path = closed[trail_map.finish]
-#     print(path)
-#     return -path
-
-def c_tup(cplx):
-    return (cplx.real, cplx.imag)
-
-def find_long(nodes):
+def find_longest_directional_path(trail_map):
+    nodes = get_node_neighbors(trail_map)
 
     # [((1+0j), [((17+5j), 61)])
     #  (node, [neighbors]) neighbors are (node, steps)
@@ -234,35 +240,124 @@ def find_long(nodes):
     heappush(tentative, (0, c_tup(first)))
     while tentative:
         distance, node = heappop(tentative)
-        print(f'evaluate {node}, {distance} steps')
+        # print(f'evaluate {node}, {distance} steps')
 
         confirmed.add((distance, node))
 
-        print(f'confirmed {node}, {distance} steps')
+        # print(f'confirmed {node}, {distance} steps')
         for n in nodes[complex(*node)]:
-            print(n)
-            print(f'\ttentative {n[0]}, {distance-n[1]} steps')
+            # print(f'\ttentative {n[0]}, {distance-n[1]} steps')
             heappush(tentative, (distance-n[1], c_tup(n[0])))
 
-    small = 0
-    for c in confirmed:
-        if c[0] < small:
-            small = c[0]
-    print(confirmed)
-    print(small)
+    longest = -min(map(lambda x: x[0], confirmed))
+    return longest
 
+####
+
+def find_all_neighbors(trail_map, node):
+    neighbors = dict()
+    paths = [(0, node)]
+
+    # to prevent backtracking
+    visited = set()
+    visited.add(node)
+
+    # print(f'Find neighbors for {node}')
+    while paths:
+        distance, position = paths.pop()
+
+        for direction in (1, -1, 1j, -1j):
+            neighbor = position+direction
+            if neighbor not in visited:
+                visited.add(neighbor)
+                symbol = trail_map.get(neighbor)
+                if symbol and symbol and symbol in ('.', '^', 'v', '<', '>'):
+                    if neighbor in trail_map.get_nodes():
+                        # print(f'\tfound {neighbor} {neighbor_symbol}')
+                        neighbors[neighbor] = distance+1
+                    else:
+                        # print(f'\twalk {neighbor} {neighbor_symbol}')
+                        paths.append((distance+1, neighbor))
+
+    # returns list[tuple(node: complex, distance: int)]
+    return neighbors
+
+def get_all_neighbors(trail_map):
+    neighbors = []
+    for node in trail_map.get_nodes():
+        neighbors.append(find_all_neighbors(trail_map, node))
+
+    return dict(zip(trail_map.get_nodes(), neighbors))
+
+
+def find_longest_pathXXX(trail_map):
+    nodes = get_all_neighbors(trail_map)
+
+    for n, neigh in nodes.items():
+        print(n, neigh)
+
+    tentative = []
+    confirmed = set()
+
+    heappush(tentative, (0, c_tup(trail_map.start)))
+    while tentative:
+        distance, node = heappop(tentative)
+
+        if (distance, node) in confirmed:
+            continue
+
+        print(f'confirmed {node}, {distance} steps')
+        confirmed.add((distance, node))
+
+        for n, d in nodes[complex(*node)].items():
+            print(f'\ttentative {n}, {distance-d} steps')
+            heappush(tentative, (distance-d, c_tup(n)))
+
+    longest = -min(map(lambda x: x[0], confirmed))
+    return longest
+
+def search(node, nodes, distance, longest, seen, trail_map):
+    # print(f'search {node}, nodes, {distance}, seen, map')
+    if node == trail_map.finish:
+        return distance
+    
+    if node in seen:
+        return longest
+    
+    seen.add(node)
+    # search neigibors for longest path
+    # print('distance', distance)
+    for neigh, d in nodes[node].items():
+        # print(f'\t check {neigh} {d}')
+        ddd = search(neigh, nodes, distance+d, longest, seen, trail_map)
+        if ddd > longest:
+            longest = ddd
+
+    seen.remove(node)
+    return longest
+
+def find_longest_path(trail_map):
+    nodes = get_all_neighbors(trail_map)
+    start = trail_map.start
+
+    return search(start, nodes, 0, 0, set(), trail_map)
+
+
+
+####
 
 def print_dot(nodes):
-    print(nodes)
+    """Print GraphViz `.dot` digraph of nodes"""
     def p_node(node):
         return f'{int(node.real):03}{int(node.imag):03}'
 
     print('digraph {')
-    for node in nodes:
-        # ((1+0j), [((3+5j), 15)])
-        pos, neighbors = node
+    for node, neighbors in nodes.items():
         for n in neighbors:
-            print(f'{p_node(pos)} -> {p_node(n[0])} [label="{n[1]}"]')
+            if node in nodes[n]:
+                print(f'{p_node(node)} -- {p_node(n[0])} [label="{n[1]}"]')
+            else:
+                print(f'{p_node(node)} -> {p_node(n[0])} [label="{n[1]}"]')
 
     print('}')
 
@@ -290,26 +385,22 @@ def main():
         with Profile() as profile:
             trail_map = load_file(filename)
 
-            trail_map.print()
+            # trail_map.print()
+            # print_dot(get_node_neighbors(trail_map))
+
             #
             # Part One
             #
-            # 2_102 too low
+
             # 2_186
-            nodes = find_paths(trail_map)
-            for n, v in nodes.items():
-                print(n, '->', v)
-            # trail_map.print()
-            # print_dot(nodes)
-
-            find_long(nodes)
-
+            longest_path = find_longest_directional_path(trail_map)
+            print(f'\t1. The longest directional path is: {longest_path:,}')
 
             #
             # Part Two
             #
-            # n_things = len(things)
-            # print(f'\t2. umber of things: {n_things:,}')
+            longest_path = find_longest_path(trail_map)
+            print(f'\t2. The longest overall path is: {longest_path:,}')
 
         print()
 

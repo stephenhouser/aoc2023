@@ -64,4 +64,12 @@ Example path:
 
 Example answer: _94_ (shorter paths 90, 86, 82, 82, and 74)
 
+- Identify nodes -- where there are intersections
+- Follow node paths to determine direction to neighbors
+- save in [ [node, [neighbors, ...]], ...] list
+- really ugly at the moment, but finishes very quickly
+- Dijkstra using -G (paths in the negative)
+
 ## Part Two
+
+- The graph is no longer directional
