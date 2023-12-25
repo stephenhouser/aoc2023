@@ -73,3 +73,7 @@ Example answer: _94_ (shorter paths 90, 86, 82, 82, and 74)
 ## Part Two
 
 - The graph is no longer directional
+- recursive n! path search ~ about 102 million searched
+- is there anything better?
+
+Example answer:  _154_

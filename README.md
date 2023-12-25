@@ -39,5 +39,5 @@ Contains my solutions to the [Advent of Code 2023](https://adventofcode.com/2023
 - [Day 20: Pulse Propagation](https://adventofcode.com/2023/day/20) -- [solution](./Day-20)
 - [Day 21: Step Counter](https://adventofcode.com/2023/day/21) -- [solution](./Day-21)
 - [Day 22: Sand Slabs](https://adventofcode.com/2023/day/22) -- [solution](./Day-22)
-- [Day 22: A Long Walk](https://adventofcode.com/2023/day/23) -- [solution](./Day-23)
+- [Day 23: A Long Walk](https://adventofcode.com/2023/day/23) -- [solution](./Day-23)
 - [Day 23: Never Tell Me The Odds](https://adventofcode.com/2023/day/24) -- [solution](./Day-24)

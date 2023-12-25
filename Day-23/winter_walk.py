@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day X: ...
+Advent of Code 2023 - Day 23: A Long Walk
 Stephen Houser <stephenhouser@gmail.com>
 """
 
-import re
 import argparse
 import unittest
 from cProfile import Profile
@@ -19,30 +18,26 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Part 1 solution for test.txt"""
-        things = load_file('test.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        longest_path = find_longest_directional_path(load_file('test.txt'))
+        self.assertEqual(longest_path, 94)
 
     def test_part1_solution(self):
         """Part 1 solution for input.txt"""
-        things = load_file('input.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        longest_path = find_longest_directional_path(load_file('input.txt'))
+        self.assertEqual(longest_path, 2_186)
 
     #
     # Part Two
     #
     def test_part2_example(self):
         """Part 2 solution for test.txt"""
-        things = load_file('test.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        longest_path = find_longest_undirected_path(load_file('test.txt'))
+        self.assertEqual(longest_path, 154)
 
     def test_part2_solution(self):
         """Part 2 solution for input.txt"""
-        things = load_file('input.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        longest_path = find_longest_undirected_path(load_file('input.txt'))
+        self.assertEqual(longest_path, 6_802)
 
 
 def c_str(cplx):
@@ -108,12 +103,12 @@ class Map:
         self.start = complex(1,0)
         self.finish = complex(self.cols-2, self.rows-1)
 
-    def get_start(self):
-        """Return the start location on the map"""
-        starts = list(filter(lambda x: self._map[x] == 'S', self._map))
+    # def get_start(self):
+    #     """Return the start location on the map"""
+    #     starts = list(filter(lambda x: self._map[x] == 'S', self._map))
 
-        assert len(starts) == 1
-        return starts[0]
+    #     assert len(starts) == 1
+    #     return starts[0]
 
     def get_nodes(self):
         """Returns dictionary of nodes on the map, keys are complex(x,y).
@@ -171,10 +166,49 @@ class Map:
         """Return string representation"""
         return f'Empty'
 
-def symbol_direction(symbol, direction):
-    if not symbol:
-        return False
+def find_neighbors(trail_map, node, check_neighbor):
+    """Return list of neighbors for a node.
+        Use check_neighbor to check if traversal is valid with given direction
+    """
+    neighbors = dict()
+    paths = [(0, node)]
 
+    # to prevent backtracking
+    visited = set()
+    visited.add(node)
+
+    # print(f'Find neighbors for {node}')
+    while paths:
+        distance, position = paths.pop()
+
+        for direction in (1, -1, 1j, -1j):
+            neighbor = position+direction
+            if neighbor not in visited:
+                visited.add(neighbor)
+                symbol = trail_map.get(neighbor)
+                if symbol and check_neighbor(symbol, direction):
+                    if neighbor in trail_map.get_nodes():
+                        # print(f'\tfound {neighbor} {neighbor_symbol}')
+                        neighbors[neighbor] = distance+1
+                    else:
+                        # print(f'\twalk {neighbor} {neighbor_symbol}')
+                        paths.append((distance+1, neighbor))
+
+    # returns list[tuple(node: complex, distance: int)]
+    return neighbors
+
+def get_node_neighbors(trail_map, check_neighbor):
+    """Return list of nodes and their neighbors
+        Use check_neighbor to check if traversal is valid.
+    """
+    neighbors = []
+    for node in trail_map.get_nodes():
+        neighbors.append(find_neighbors(trail_map, node, check_neighbor))
+
+    return dict(zip(trail_map.get_nodes(), neighbors))
+
+def is_valid_direction(symbol, direction):
+    """Return True if the given symbol can be traversed in direction"""
     if symbol == '.':
         return True
 
@@ -193,108 +227,11 @@ def symbol_direction(symbol, direction):
 
     return False
 
-def find_neighbors(trail_map, node):
-    neighbors = []
-    paths = [(0, node)]
-
-    # to prevent backtracking
-    visited = set()
-    visited.add(node)
-
-    # print(f'Find neighbors for {node}')
-    while paths:
-        distance, position = paths.pop()
-
-        for direction in (1, -1, 1j, -1j):
-            neighbor = position+direction
-            if neighbor not in visited:
-                visited.add(neighbor)
-                symbol = trail_map.get(neighbor)
-                if symbol and symbol_direction(symbol, direction):
-                    if neighbor in trail_map.get_nodes():
-                        # print(f'\tfound {neighbor} {neighbor_symbol}')
-                        neighbors.append((neighbor, distance+1))
-                    else:
-                        # print(f'\twalk {neighbor} {neighbor_symbol}')
-                        paths.append((distance+1, neighbor))
-
-    # returns list[tuple(node: complex, distance: int)]
-    return neighbors
-
-def get_node_neighbors(trail_map):
-    neighbors = []
-    for node in trail_map.get_nodes():
-        neighbors.append(find_neighbors(trail_map, node))
-
-    return dict(zip(trail_map.get_nodes(), neighbors))
-
 def find_longest_directional_path(trail_map):
-    nodes = get_node_neighbors(trail_map)
-
-    # [((1+0j), [((17+5j), 61)])
-    #  (node, [neighbors]) neighbors are (node, steps)
-    tentative = []
-    confirmed = set()
-
-    first = list(nodes.keys())[0]
-    heappush(tentative, (0, c_tup(first)))
-    while tentative:
-        distance, node = heappop(tentative)
-        # print(f'evaluate {node}, {distance} steps')
-
-        confirmed.add((distance, node))
-
-        # print(f'confirmed {node}, {distance} steps')
-        for n in nodes[complex(*node)]:
-            # print(f'\ttentative {n[0]}, {distance-n[1]} steps')
-            heappush(tentative, (distance-n[1], c_tup(n[0])))
-
-    longest = -min(map(lambda x: x[0], confirmed))
-    return longest
-
-####
-
-def find_all_neighbors(trail_map, node):
-    neighbors = dict()
-    paths = [(0, node)]
-
-    # to prevent backtracking
-    visited = set()
-    visited.add(node)
-
-    # print(f'Find neighbors for {node}')
-    while paths:
-        distance, position = paths.pop()
-
-        for direction in (1, -1, 1j, -1j):
-            neighbor = position+direction
-            if neighbor not in visited:
-                visited.add(neighbor)
-                symbol = trail_map.get(neighbor)
-                if symbol and symbol and symbol in ('.', '^', 'v', '<', '>'):
-                    if neighbor in trail_map.get_nodes():
-                        # print(f'\tfound {neighbor} {neighbor_symbol}')
-                        neighbors[neighbor] = distance+1
-                    else:
-                        # print(f'\twalk {neighbor} {neighbor_symbol}')
-                        paths.append((distance+1, neighbor))
-
-    # returns list[tuple(node: complex, distance: int)]
-    return neighbors
-
-def get_all_neighbors(trail_map):
-    neighbors = []
-    for node in trail_map.get_nodes():
-        neighbors.append(find_all_neighbors(trail_map, node))
-
-    return dict(zip(trail_map.get_nodes(), neighbors))
-
-
-def find_longest_pathXXX(trail_map):
-    nodes = get_all_neighbors(trail_map)
-
-    for n, neigh in nodes.items():
-        print(n, neigh)
+    """Return the length of the longest path using directional paths."""
+    # Effectively Dijkstra's with the node weights negated (-G)
+    # Then reutrn the - of the shortest found path
+    nodes = get_node_neighbors(trail_map, is_valid_direction)
 
     tentative = []
     confirmed = set()
@@ -302,49 +239,60 @@ def find_longest_pathXXX(trail_map):
     heappush(tentative, (0, c_tup(trail_map.start)))
     while tentative:
         distance, node = heappop(tentative)
-
-        if (distance, node) in confirmed:
-            continue
-
-        print(f'confirmed {node}, {distance} steps')
         confirmed.add((distance, node))
+        # print(f'confirmed {node}, {distance} steps')
 
-        for n, d in nodes[complex(*node)].items():
-            print(f'\ttentative {n}, {distance-d} steps')
-            heappush(tentative, (distance-d, c_tup(n)))
+        # Cannot early return here as we need to find the smallest
+        # if node == c_tup(trail_map.finish):
+        #     return distance
+
+        for neighbor, neighbor_distance in nodes[complex(*node)].items():
+            # print(f'\ttentative {neighbor}, {distance-neighbor_distance} steps')
+            heappush(tentative, (distance-neighbor_distance, c_tup(neighbor)))
 
     longest = -min(map(lambda x: x[0], confirmed))
     return longest
 
-def search(node, nodes, distance, longest, seen, trail_map):
+####
+def exhaustive_search(node, distance, longest, seen, nodes, finish):
+    """Return the length of the longest path using non-directional paths."""
+    # Exhaustive n! search of all paths to find the one with the longest length.
+
     # print(f'search {node}, nodes, {distance}, seen, map')
-    if node == trail_map.finish:
+    if node == finish:
         return distance
-    
+
+    # avoid back-tracking
     if node in seen:
         return longest
-    
+
     seen.add(node)
     # search neigibors for longest path
-    # print('distance', distance)
-    for neigh, d in nodes[node].items():
-        # print(f'\t check {neigh} {d}')
-        ddd = search(neigh, nodes, distance+d, longest, seen, trail_map)
-        if ddd > longest:
-            longest = ddd
+    for neighbor, neighbor_distance in nodes[node].items():
+        neighbor_path = exhaustive_search(neighbor,
+                                          distance+neighbor_distance,
+                                          longest,
+                                          seen, nodes, finish)
+        if neighbor_path > longest:
+            longest = neighbor_path
 
     seen.remove(node)
     return longest
 
-def find_longest_path(trail_map):
-    nodes = get_all_neighbors(trail_map)
+def is_symbol_valid(symbol, _):
+    """Returns if the symbol is traversable, ignoring direction (part 2)"""
+    return symbol in ('.', '^', 'v', '<', '>')
+
+def find_longest_undirected_path(trail_map):
+    """Return the length of the longest path using non-directed paths."""
+    # Need to do an exhaustive n! search of all the nodes and paths
+    # This is an NP-Hard problem!
+    nodes = get_node_neighbors(trail_map, is_symbol_valid)
     start = trail_map.start
+    finish = trail_map.finish
 
-    return search(start, nodes, 0, 0, set(), trail_map)
+    return exhaustive_search(start, 0, 0, set(), nodes, finish)
 
-
-
-####
 
 def print_dot(nodes):
     """Print GraphViz `.dot` digraph of nodes"""
@@ -399,7 +347,8 @@ def main():
             #
             # Part Two
             #
-            longest_path = find_longest_path(trail_map)
+            # 6_802
+            longest_path = find_longest_undirected_path(trail_map)
             print(f'\t2. The longest overall path is: {longest_path:,}')
 
         print()
