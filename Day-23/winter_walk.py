@@ -55,12 +55,6 @@ def ascii_color(hex_color, text):
     b = int(hex_color[4:6], 16)
     return f'\033[38;2;{r};{g};{b}m{text}\033[0m'
 
-class Node:
-    def __init__(self):
-        self.x = None
-        self.y = None
-        self.neighbors = None
-
 class Map:
     """Represents a ___"""
     def __init__(self, map_data):
@@ -97,8 +91,8 @@ class Map:
         self._map = {complex(i,j): c for j, r in enumerate(lines)
                      for i, c in  enumerate(r.strip()) if c != '#'}
 
-        self.rows = int(max([n.imag for n in self._map]))+1
-        self.cols = int(max([n.real for n in self._map]))+1+1
+        self.rows = int(max(n.imag for n in self._map))+1
+        self.cols = int(max(n.real for n in self._map))+1+1
 
         self.start = complex(1,0)
         self.finish = complex(self.cols-2, self.rows-1)
@@ -164,13 +158,13 @@ class Map:
 
     def __str__(self):
         """Return string representation"""
-        return f'Empty'
+        return 'Empty'
 
 def find_neighbors(trail_map, node, check_neighbor):
     """Return list of neighbors for a node.
         Use check_neighbor to check if traversal is valid with given direction
     """
-    neighbors = dict()
+    neighbors = {}
     paths = [(0, node)]
 
     # to prevent backtracking
