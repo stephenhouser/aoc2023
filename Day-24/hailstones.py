@@ -33,12 +33,22 @@ class TestAOC(unittest.TestCase):
     #
     # Part Two
     #
-    def test_part2_example(self):
+    def test_part2_example_geometric(self):
+        """Part 2 solution for test.txt"""
+        rock = find_rock_geometric(load_file('test.txt'))
+        self.assertEqual(sum(rock.position), 47)
+
+    def test_part2_example_z3(self):
         """Part 2 solution for test.txt"""
         rock = find_rock_z3(load_file('test.txt'))
         self.assertEqual(sum(rock.position), 47)
 
-    def test_part2_solution(self):
+    def test_part2_solution_geometric(self):
+        """Part 2 solution for input.txt"""
+        rock = find_rock_geometric(load_file('input.txt'))
+        self.assertEqual(sum(rock.position), 618_534_564_836_937)
+
+    def test_part2_solution_z3(self):
         """Part 2 solution for input.txt"""
         rock = find_rock_z3(load_file('input.txt'))
         self.assertEqual(sum(rock.position), 618_534_564_836_937)
@@ -87,7 +97,6 @@ def load_file(filename: str):
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             return list(map(Hailstone, file.readlines()))
-
     except FileNotFoundError:
         print('File %s not found.', filename)
 
@@ -168,47 +177,15 @@ def print_stones(stones):
     for stone in stones:
         print(stone)
 
-# *** Unused ***
-
-# def intersection_2d_a(s1, rock):
-#     fix_s1 = Hailstone(s1)
-#     fix_s1.velocity = sub_tuple(s1.velocity, rock.velocity)
-
-#     print('\tcheck', rock, s1, ' -> ', fix_s1)
-#     return vector2d_intersection(fix_s1, rock)
-
-# def brute_check(stones, rock):
-#     intersection = intersection_2d_a(stones[0], rock)
-#     print(intersection)
-#     for stone in stones[1:]:
-#         i_point = intersection_2d_a(stone, rock)
-#         print('check', rock, stone, i_point)
-#         if not i_point or i_point != intersection:
-#             return False
-
-#     return True
-
-# def brute_check(stones, rock_velocity):
-#     #arrangements = combinations(stones, 2)
-#     intersection = intersection_2d_a(*(next(arrangements)), rock_velocity)
-#     for s1, s2 in arrangements:
-#         i_point = intersection_2d_a(s1, s2, rock_velocity)
-#         print('check', s1, s2, i_point)
-#         if not i_point or i_point != intersection:
-#             return False
-
-#     return True
-
-# *** Plot things
+# *** Using matplotlib to plot so I can see what's happening
+#
 # import matplotlib.pyplot as plt
-
 # def project(point, delta, multiple):
 #     return tuple(map(lambda x, y: x + y*multiple, point, delta))
-
 # def plotter(stones):
 #     fig = plt.figure()
 #     ax = fig.add_subplot(111, projection='3d')
-
+#
 #     for s in stones:
 #         end = project(s.position, s.velocity, 250_000_000_000)
 #         ax.plot([s.position[0]], [s.position[1]], zs=[s.position[2]], marker='o')
@@ -216,8 +193,6 @@ def print_stones(stones):
 #                 [s.position[1], end[1]],
 #                 zs=[s.position[2], end[2]])
 #     plt.show()
-
-# *** Unused ***
 
 def find_plane(stone1, stone2):
     """Returns a normal and plane that these two stones lie on"""
@@ -246,8 +221,8 @@ def find_rock_geometric(stones):
     b, plane_B = find_plane(stones[0], stones[2])
     c, plane_C = find_plane(stones[1], stones[2])
 
-    w = solve_linear(plane_A, cross_tuple(b, c), 
-                     plane_B, cross_tuple(c, a), 
+    w = solve_linear(plane_A, cross_tuple(b, c),
+                     plane_B, cross_tuple(c, a),
                      plane_C, cross_tuple(a, b))
     t = dot_tuple(a, cross_tuple(b, c))
 
@@ -273,6 +248,8 @@ def find_rock_geometric(stones):
 def find_rock_z3(stones):
     """Solve using z3-solver
         Z3 is a state-of-the art theorem prover from Microsoft Research
+        Adapted from: [4HbQ](https://www.reddit.com/user/4HbQ/)
+        in [2023 Day 24 Solutions](https://www.reddit.com/r/adventofcode/comments/18pnycy/comment/keq6pj1/)
     """
     # solve for rock and it's velocity across time
     rock = z3.RealVector('r', 3)
@@ -292,7 +269,6 @@ def find_rock_z3(stones):
 
     if solver.check():
         model = solver.model()
-
         rock_start = (model[rock[0]].as_long(),
                     model[rock[1]].as_long(),
                     model[rock[2]].as_long())
@@ -349,4 +325,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #unittest.main()
