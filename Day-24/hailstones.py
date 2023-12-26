@@ -88,7 +88,7 @@ def load_file(filename: str):
     return []
 
 def intersection(s1, s2):
-    """Returns where s1 and s2 intersect"""
+    """Returns intersection of s1 and s2"""
     line1 = (c_tup(s1.position), c_tup(s1.position+s1.velocity))
     line2 = (c_tup(s2.position), c_tup(s2.position+s2.velocity))
 
@@ -107,7 +107,8 @@ def intersection(s1, s2):
     y = det(d, ydiff) / div
     return complex(x, y)
 
-def in_future(line, point):
+def on_vector(line, point):
+    """Return True if the point is in the vector"""
     x, y = c_tup(line.position)
     dx, dy = c_tup(line.velocity)
 
@@ -116,17 +117,18 @@ def in_future(line, point):
 
     if dx > 0 and point.real < x:
         return False
-    
+
     if dy < 0 and point.imag > y:
         return False
-    
+
     if dy > 0 and point.imag < y:
         return False
-    
+
     return True
 
-def simulate(stones, test_area):
-    intersection_count = 0
+def intersections_in_area(stones, test_area):
+    """Return list of intersections that happen within test_area"""
+    intersections = []
     for s1, s2 in combinations(stones, 2):
         i_point = intersection(s1, s2)
         # print(f'{s1} and {s2} -> {i_point}')
@@ -134,14 +136,15 @@ def simulate(stones, test_area):
             test_area[0].real <= i_point.real <= test_area[1].real and \
             test_area[0].imag <= i_point.imag <= test_area[1].imag:
 
-            if in_future(s1, i_point) and in_future(s2, i_point):
-                print(f'{s1} and {s2} -> {c_str(i_point)}')
-                intersection_count += 1
+            if on_vector(s1, i_point) and on_vector(s2, i_point):
+                # print(f'{s1} and {s2} -> {c_str(i_point)}')
+                intersections.append((s1, s2, i_point))
 
-    return intersection_count
+    return intersections
 
 
 def print_stones(stones):
+    """Pretty print list of hailstones"""
     for stone in stones:
         print(stone)
 
@@ -157,15 +160,19 @@ def main():
 
         with Profile() as profile:
             stones = load_file(filename)
-
             # print_stones(stones)
+
             #
             # Part One
             #
-            n_stones = len(stones)
-            # i_count = simulate(stones, (complex(7,7), complex(27, 27)))
-            i_count = simulate(stones, (complex(200000000000000,200000000000000), complex(400000000000000, 400000000000000)))
-            print(f'\t1. Number of things: {i_count:,}')
+            if filename == 'test.txt':
+                test_area = (complex(7, 7), complex(27, 27))
+            else:
+                test_area = (complex(200_000_000_000_000, 200_000_000_000_000),
+                            complex(400_000_000_000_000, 400_000_000_000_000))
+            intersections = intersections_in_area(stones, test_area)
+            intersection_count = len(intersections)
+            print(f'\t1. Number of intersections: {intersection_count:,}') # 13,910
 
             #
             # Part Two
