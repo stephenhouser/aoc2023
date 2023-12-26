@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Advent of Code 2023 - Day X: ...
+Advent of Code 2023 - Day 25: Snoverload
 Stephen Houser <stephenhouser@gmail.com>
 """
 
@@ -8,7 +8,6 @@ import re
 import argparse
 import unittest
 from cProfile import Profile
-import math
 import itertools
 
 class TestAOC(unittest.TestCase):
@@ -19,30 +18,39 @@ class TestAOC(unittest.TestCase):
     #
     def test_part1_example(self):
         """Part 1 solution for test.txt"""
-        things = load_file('test.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        machine = load_file('test.txt')
+        machine.connections.remove(('hfx', 'pzl'))
+        machine.connections.remove(('bvb', 'cmg'))
+        machine.connections.remove(('jqt', 'nvd'))
+        c1 = count_reachable_nodes('hfx', machine)
+        c2 = count_reachable_nodes('pzl', machine)
+        self.assertEqual(c1*c2, 54)
 
     def test_part1_solution(self):
         """Part 1 solution for input.txt"""
-        things = load_file('input.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+        machine = load_file('input.txt')
+        # I just looked at the graph and found these nodes :-)
+        machine.connections.remove(('qfb', 'vkd'))
+        machine.connections.remove(('hqq', 'xxq'))
+        machine.connections.remove(('kgl', 'xzz'))
+        c1 = count_reachable_nodes('vkd', machine)
+        c2 = count_reachable_nodes('qfb', machine)
+        self.assertEqual(c1*c2, 514_794)
 
     #
     # Part Two
     #
-    def test_part2_example(self):
-        """Part 2 solution for test.txt"""
-        things = load_file('test.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+    # def test_part2_example(self):
+    #     """Part 2 solution for test.txt"""
+    #     things = load_file('test.txt')
+    #     result = len(things)
+    #     self.assertEqual(result, 10)
 
-    def test_part2_solution(self):
-        """Part 2 solution for input.txt"""
-        things = load_file('input.txt')
-        result = len(things)
-        self.assertEqual(result, 10)
+    # def test_part2_solution(self):
+    #     """Part 2 solution for input.txt"""
+    #     things = load_file('input.txt')
+    #     result = len(things)
+    #     self.assertEqual(result, 10)
 
 class Machine:
     """Represents the machine with components and connections"""
@@ -67,8 +75,8 @@ class Machine:
         return list(filter(lambda x: node in x, self.connections))
 
     def get_neighbors(self, node):
-        return list(filter(lambda y: y!=node, 
-                           filter(lambda x: node in x, self.connections)))
+        """Return a set of the neighbors of node"""
+        return set(itertools.chain(*filter(lambda x: node in x, self.connections)))
 
 def load_file(filename: str):
     """Load lines from file into ___"""
@@ -109,11 +117,11 @@ def count_reachable_nodes1(node, machine):
 def count_reachable_nodes(node, machine):
     """Return the number of nodes that can be reached from node"""
     visited = set()
-    pool = machine.get_neighbors(node)
+    pool = [*machine.get_neighbors(node)]
     visited.add(node)
     while pool:
         node = pool.pop()
-        print(node)
+        # print(node)
         if node not in visited:
             pool.extend(machine.get_neighbors(node))
             visited.add(node)
