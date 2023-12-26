@@ -1,0 +1,36 @@
+strict graph {
+frs -- lsr
+rsh -- lsr
+pzl -- lsr
+rsh -- pzl
+jqt -- nvd
+rsh -- frs
+jqt -- xhk
+nvd -- lhk
+rhn -- xhk
+lsr -- lhk
+frs -- lhk
+bvb -- xhk
+ntq -- hfx
+pzl -- nvd
+cmg -- lhk
+ntq -- bvb
+cmg -- nvd
+ntq -- jqt
+xhk -- hfx
+rzs -- cmg
+rzs -- qnr
+frs -- qnr
+qnr -- nvd
+rhn -- hfx
+cmg -- qnr
+bvb -- hfx
+rhn -- bvb
+ntq -- xhk
+pzl -- hfx
+jqt -- rhn
+rzs -- lsr
+cmg -- bvb
+rzs -- rsh
+}
+
