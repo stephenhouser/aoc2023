@@ -66,6 +66,10 @@ class Machine:
         """Return the connections for node"""
         return list(filter(lambda x: node in x, self.connections))
 
+    def get_neighbors(self, node):
+        return list(filter(lambda y: y!=node, 
+                           filter(lambda x: node in x, self.connections)))
+
 def load_file(filename: str):
     """Load lines from file into ___"""
     try:
@@ -84,7 +88,7 @@ def print_dot(machine):
         print(node[0], '--', node[1])
     print('}')
 
-def count_reachable_nodes(node, machine):
+def count_reachable_nodes1(node, machine):
     """Return the number of nodes that can be reached from node"""
     visited = set()
     pool = machine.find_wire(node)
@@ -101,6 +105,21 @@ def count_reachable_nodes(node, machine):
             visited.add(n2)
 
     return len(visited)
+
+def count_reachable_nodes(node, machine):
+    """Return the number of nodes that can be reached from node"""
+    visited = set()
+    pool = machine.get_neighbors(node)
+    visited.add(node)
+    while pool:
+        node = pool.pop()
+        print(node)
+        if node not in visited:
+            pool.extend(machine.get_neighbors(node))
+            visited.add(node)
+
+    return len(visited)
+
 
 def main():
     """Main Routine, does all the work"""
