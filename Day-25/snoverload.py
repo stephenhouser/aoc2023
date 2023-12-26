@@ -45,12 +45,15 @@ class TestAOC(unittest.TestCase):
         self.assertEqual(result, 10)
 
 class Machine:
+    """Represents the machine with components and connections"""
+
     def __init__(self, text):
         self.nodes = set()
         self.connections = set()
         self.load_machine(text)
 
     def load_machine(self, text):
+        """Load the nodes and components from iterable text"""
         for line in text:
             match = re.findall(r'[a-z]{3}', line)
             for node in match:
@@ -60,6 +63,7 @@ class Machine:
                 self.connections.add(tuple(sorted((match[0], node))))
 
     def find_wire(self, node):
+        """Return the connections for node"""
         return list(filter(lambda x: node in x, self.connections))
 
 def load_file(filename: str):
@@ -73,6 +77,7 @@ def load_file(filename: str):
     return None
 
 def print_dot(machine):
+    """Pretty print the nodes as a GraphViz .dot file"""
     # dot -T svg test.dot > test.svg
     print('strict graph {')
     for node in machine.connections:
@@ -80,6 +85,7 @@ def print_dot(machine):
     print('}')
 
 def count_reachable_nodes(node, machine):
+    """Return the number of nodes that can be reached from node"""
     visited = set()
     pool = machine.find_wire(node)
     visited.add(node)
